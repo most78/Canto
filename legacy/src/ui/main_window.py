@@ -67,7 +67,7 @@ class MainWindow(QMainWindow):
         self.pages = QStackedWidget()
         layout.addWidget(self.pages, 1)
         self.practice = PracticePage(progress or Progress.load())
-        self.songs_page = SongsPage(Path(__file__).resolve().parents[2] / 'canciones')
+        self.songs_page = SongsPage(Path(__file__).resolve().parents[3] / 'canciones')
         self.pages.addWidget(self.practice)
         self.pages.addWidget(scrollable(self.songs_page))
         self.player = self.songs_page.player

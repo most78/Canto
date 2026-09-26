@@ -1,6 +1,121 @@
 # Canto — Contexto del proyecto
 
-## ESTADO ACTUAL (26/09/2026, noche) · juego «Escalas»
+## ESTADO ACTUAL (26/09/2026) · Canto es una app web local
+
+Lee esto primero. Lo de más abajo es historial.
+
+### Qué pidió Marcos
+
+- Migrar Canto de Python/PySide6 a una **web local**: HTML, CSS y JS vanilla
+  con Web Audio y Canvas, sin frameworks, backend, build ni dependencias.
+  Se arranca con `start-canto.bat`, que ejecuta `python -m http.server 8765` y
+  abre el navegador.
+- Rediseño **tranquilo**: carbón neutro y cálido, con color sólo con
+  significado:
+  - violeta: objetivo;
+  - verde: acierto;
+  - cyan: estás grave, sube;
+  - naranja: estás agudo, baja;
+  - dorado: recompensa;
+  - rosa: identidad y momentos especiales.
+  «Canto está tranquilo cuando tú estás tranquilo y cobra vida cuando cantas.»
+- **Sin pandas:** Marcos pidió quitarlos («no aportan nada»). Su especificación
+  de la migración los mencionaba, pero se siguió la petición más reciente. La
+  celebración de los aciertos es con partículas, ondas y halo.
+- Conservar toda la funcionalidad. El Python queda en `legacy/` como
+  referencia, hasta validar la web con su voz.
+
+### Arquitectura web
+
+| Carpeta | Qué hace | Port de (legacy/src) |
+|---|---|---|
+| `app/js/pitch/` | `notes.js` (Hz → nota/cents, franco-belga), `fft.js`, `yin.js` (YIN 1:1) | `audio/pitch.py` |
+| `app/js/audio/` | `context.js` (un AudioContext = un reloj), `capture-worklet.js` + `mic.js` (ventana de 64 ms cada ~21 ms), `piano.js` (muestras calibradas con YIN, programadas en el reloj de audio) | `audio/capture.py`, `piano.py`, `output.py` |
+| `app/js/game/` | `noteRun.js` (rondas, juicios, fases, pausa, silencios), `levels.js`, `reference.js` | `game/*.py` |
+| `app/js/state/progress.js` | Progreso en `localStorage`, mismo formato; importa `datos/progreso.json` la primera vez | `game/progress.py` |
+| `app/js/exercises/scales.js` | Lógica de la pantalla de práctica sin DOM | `ui/practice.py` |
+| `app/js/songs/` | Biblioteca (lee el índice de `canciones/` que publica http.server) y A–B | `ui/songs.py` |
+| `app/js/ui/` | Pantallas, pista en Canvas (`track.js`), mapa de voz, canciones | `ui/*.py` |
+| `app/css/tokens.css` | Sistema de diseño: colores, tipografía, espacio, radios y estados | `ui/theme.py` |
+
+Diferencias con Python, todas intencionadas:
+
+- **Un solo reloj** para todo: `AudioContext.currentTime`. Micrófono, juego y
+  piano comparten reloj, así que el piano suena alineado con las barras de
+  escucha.
+- **Análisis solapado**, con menos latencia: ventana de 64 ms cada 21 ms, en
+  vez de bloques de 80 ms. Al motor sólo se le pasa como duración el audio
+  nuevo, así que nada puntúa dos veces.
+- La **cabecera se oculta durante la ronda**, y cambiar de pestaña o de
+  sección pausa.
+- **No se migraron** `firefly.py` ni `tuner_widget.py`: ya estaban sustituidos
+  y sin uso.
+
+### Cómo arrancar y probar
+
+```powershell
+.\start-canto.bat          # o: python -m http.server 8765  →  http://localhost:8765/
+npm test                  # 39 tests JS (node --test, sin dependencias)
+.\.venv\Scripts\python.exe tests\web\make_fixtures.py            # regenera los resultados de referencia del Python
+.\.venv\Scripts\python.exe -m unittest discover -s legacy/tests   # 53 tests del legacy
+```
+
+### Verificado
+
+- **Equivalencia con Python:** `tests/web/python-equivalence.test.mjs` compara
+  con resultados generados por el código Python original. Coinciden:
+  - YIN: 47 casos, ≤0,01 cents;
+  - notas y cents, y la colocación de los niveles;
+  - la búsqueda de nota;
+  - una **partida completa con ruido y fallos**: juicios, tiempo acertado,
+    puntos, racha y resumen.
+- **Tests JS del resto:** reglas del motor, niveles, progreso e importación,
+  canciones y A–B, y el recorrido completo del ejercicio (`session.test.mjs`).
+- **En el navegador integrado de Claude:**
+  - la app carga sin errores de consola;
+  - se importó el progreso real (Do2, nivel 2);
+  - piano cargado (14 muestras);
+  - ronda completa con **voz simulada** inyectada por el mismo camino que el
+    micrófono: fases, colores, partículas, pausa y resultado;
+  - canciones: listado, reproducción y bucle A–B.
+- **Micrófono real:** no se ha probado. El navegador integrado lo bloquea; sí
+  se comprobó que la app muestra bien el aviso de permiso denegado.
+
+### Pendiente de probar con Marcos (en Chrome o Edge)
+
+- Micrófono real con los WH-1000XM5 y detección de su nota.
+- Que el piano se oiga con el micro de los cascos abierto. Si no se oyera,
+  Chrome permite elegir la salida (`AudioContext.setSinkId`) y se podría
+  añadir un selector.
+- La latencia percibida y lo justos que se sienten los juicios.
+- La reproducción de la canción en su navegador. En la sesión, una prueba mía
+  dejó el volumen del elemento a 0 en el navegador integrado; ya está
+  corregido.
+
+### Siguiente paso
+
+1. Sesión real con Marcos. Ajustar constantes en `app/js/game/noteRun.js`,
+   `levels.js` y `mic.js` (ventana y salto) según lo observado.
+2. Cuando la web esté validada con su voz, **proponer borrar `legacy/`**
+   (seguirá en el historial de Git). La rama `pyside-restyle-wip` guarda un
+   rediseño de PySide6 interrumpido; también se puede borrar.
+
+### Trabajo con Git (Claude Code y Codex)
+
+- Repositorio privado <https://github.com/most78/Canto>, rama `main`.
+- La identidad local del repo es `most78 <marcos.ostos@gmail.com>`; la global
+  del PC es otra cuenta (NoMonoMad) y no se toca.
+- La URL del remoto incluye el usuario (`https://most78@github.com/most78/Canto.git`).
+  Sin él, el push da un 403.
+- `canciones/`, `.venv/`, `.backup/` y `datos/` están en `.gitignore`.
+  `assets/piano/` sí se sube, porque la licencia CC-BY lo permite con
+  atribución.
+
+---
+
+## Historial
+
+### Estado anterior: «Escalas» en PySide6
 
 Lee esto primero. Lo de más abajo es historial y puede describir decisiones
 ya sustituidas: el panda protagonista, los 3 s acumulados o «Pista de voz» con
@@ -125,10 +240,6 @@ una sola nota.
   atribución.
 - Uno implementa y el otro revisa sobre `git diff`. Haced commits pequeños y
   con mensaje en español.
-
----
-
-## Historial
 
 ## Corrección de captura bloqueada
 

@@ -1,140 +1,91 @@
 # Canto
 
-App local de escritorio (Python + PySide6) para practicar canto con tu propia voz.
-Diseñada para una pantalla grande: se abre maximizada, la tipografía se escala
-con la altura de la pantalla y **F11** activa la pantalla completa.
+Aplicación personal para practicar canto con tu voz, en el navegador y en local.
+Escuchas una frase al piano y la repites: una pista tipo Guitar Hero te muestra
+la nota que toca cantar (violeta), si vas grave (cyan) o agudo (naranja) y cuándo
+aciertas (verde). Guarda tu progreso, el mapa de tu voz y tu rango.
 
-Código: repositorio privado <https://github.com/most78/Canto> (rama `main`).
+Todo funciona en tu PC: no hay servidor remoto, cuentas ni conexión a internet.
+Tu voz no se graba ni se envía.
 
-## Abrir
+## Cómo arrancarla
 
-Haz doble clic en `iniciar.bat`.
+Doble clic en **`start-canto.bat`**. Arranca un servidor local y abre el
+navegador en <http://localhost:8765/>. Para apagarla, cierra la ventana negra.
 
-Preparación inicial si no existe el entorno:
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-.\.venv\Scripts\python.exe src/main.py
-```
-
-## Escalas (juego principal)
-
-Juego tipo Guitar Hero controlado cantando: **escuchas una frase al piano y la repites**.
-
-- **Eje vertical = altura.** Cada línea es un semitono con su nombre (La2,
-  Si2, Do#3…), en la convención franco-belga (La3 = 440 Hz). Arriba es más
-  agudo y abajo más grave.
-- **Eje horizontal = tiempo.** Las barras avanzan hacia la línea **AHORA**:
-  - las **translúcidas** son la ESCUCHA: el piano las toca y no puntúan;
-  - las **rosas** son TU TURNO: canta la nota que pone cada una mientras cruza
-    la línea.
-- **La bola es tu voz** y la estela, lo que acabas de cantar. En verde estás
-  en la nota; en azul con flecha ▲, estás grave (sube); en naranja con flecha
-  ▼, estás agudo (baja).
-- Se recomienda cantar diciendo el nombre de cada nota (la, si, do…), para
-  aprender cómo se llama lo que cantas. También vale una vocal.
-
-Recorrido:
-
-1. **Micrófono.** Actívalo. Probado con cascos Bluetooth Sony WH-1000XM5
-   usando su micrófono: el piano sale por WASAPI, porque la salida MME enmudece
-   al abrir el micro de unos cascos Bluetooth.
-2. **Tu nota de partida.** Haz una «u» o un «do» cómodo de un segundo. La app
-   la ajusta al semitono más cercano (por ejemplo, 214 Hz → La2) y la guarda
-   para la próxima vez. Las escalas se colocan alrededor de ella.
-3. **Elige nivel** entre los desbloqueados:
-
-| Nivel | Qué es | Margen |
-|---|---|---|
-| 1 Tres escalones | 1‑2‑3‑2‑1 de la escala mayor | ±50 cents |
-| 2 Cinco hacia arriba | 1‑2‑3‑4‑5 | ±50 |
-| 3 Sube y baja | 1…5…1, más ágil | ±50 |
-| 4 Arpegio | 1‑3‑5‑3‑1 | ±50 |
-| 5 Terceras | saltos de tercera | ±50 |
-| 6 Más precisión | como el 3 | ±35 |
-| 7 Octava | escala completa | ±50 |
-| 8 Arpegio de octava | 1‑3‑5‑8‑5‑3‑1 | ±35 |
-| 9 Afinado fino | como el 3, rápido | ±25 |
-
-4. **Ronda = 3 intentos.** Cada intento sigue el mismo orden: escuchar,
-   cantar y respirar. El primer intento va alrededor de tu nota, el segundo lo
-   más agudo que cabe en tu rango y el tercero lo más grave.
-5. **Resultado:**
-   - cada nota acertada o fallada, por intento;
-   - % del tiempo cantado dentro de la nota y tendencia grave o aguda;
-   - el **mapa de tu voz**: el % de acierto de cada semitono, con tu rango
-     actual marcado;
-   - la pregunta **«¿Te resultó cómodo?»**.
-
-### Cómo se mide el avance
-
-- **Superar un nivel:** ≥80 % de notas acertadas en 2 de los 3 intentos.
-  Desbloquea el siguiente.
-- **Mapa de tu voz:** una media móvil del acierto de cada nota. Las notas sin
-  señal clara o sin cantar no cuentan.
-- **Rango de trabajo:** empieza en tu nota −2 / +5 semitonos. Solo crece un
-  semitono por un borde cuando esa nota se acierta bien (media ≥0,7 en ≥3
-  mediciones) **y** respondes que la ronda fue cómoda. Los niveles que no
-  caben en tu rango (como la octava) esperan a que crezca.
-- Se guarda en `datos/progreso.json` (local, fuera de Git).
-
-### Reglas de puntuación (`src/game/note_run.py`)
-
-- Solo puntúa audio nuevo dentro de la ventana de cada nota cantada, y cada
-  instante cuenta una vez.
-- No suman: la escucha (más 0,6 s de cola), los descansos ni aguantar más de
-  lo que dura la barra.
-- **Cantar más fuerte no da más puntos**: el volumen solo separa silencio de
-  sonido.
-- El silencio y el ruido no son fallo. Si no hay señal fiable, la pista dice
-  «no te oigo claro»; si dejan de llegar datos del micro, lo avisa.
-- Una octava de diferencia no cuenta como acierto.
-- Hay 0,25 s de margen para llegar a cada nota.
-- La animación es independiente de la puntuación.
-
-Es una aproximación de práctica, no una medida de laboratorio. No se mide
-respiración, salud vocal ni timbre. No se graba ni se envía la voz.
-
-## Canciones
-
-Biblioteca local de `canciones/` (no se sube al repositorio). Permite
-reproducir, buscar un punto, ajustar el volumen y repetir un fragmento A–B.
-Al entrar en Escalas la canción se pausa. Todavía no se transpone ni se puntúa.
-
-## Piano
-
-El piano es Salamander Grand Piano (CC-BY 3.0, Alexander Holm): 14 muestras
-en `assets/piano/` (ver `LEEME.md` allí). Se descodifica con Qt, sin
-dependencias nuevas. Cada muestra se calibra con el mismo detector de altura y
-se reafina a la frecuencia exacta; el error medido es de unos 1–2 cents. Si
-faltaran las muestras, se usa un tono sintético.
-
-## Verificar
+Equivale a ejecutar, desde la carpeta del proyecto:
 
 ```powershell
-.\.venv\Scripts\python.exe -m unittest discover -s tests -v
-.\.venv\Scripts\python.exe tests/smoke_ui.py
+python -m http.server 8765
 ```
 
-- **Tests unitarios (53):** detección de altura (YIN), captura, salida de
-  audio, motor de rondas, niveles, progreso y búsqueda de nota.
-- **`smoke_ui.py`:** recorre toda la interfaz con reloj simulado y lecturas
-  sintéticas: canciones, nota, nivel, escucha, turno, fallos, pausa,
-  resultado y progreso guardado. Carga el piano, pero no emite sonido ni abre
-  el micro. Guarda capturas a 1920×1080 en `docs/preview-*.png`.
+y abrir `http://localhost:8765/`. Hace falta un servidor local (no basta con abrir
+`index.html` a mano) para que el navegador permita el micrófono y cargue los
+módulos y el audio. Funciona en Chrome o Edge.
 
-## Estructura
+Si tras actualizar Canto ves algo raro, recarga con **Ctrl+F5**.
 
-| Carpeta / archivo | Qué hace |
-|---|---|
-| `src/audio/` | `capture.py` (bloques de unos 80 ms con marca de tiempo), `pitch.py` (YIN), `piano.py` (muestras), `output.py` (salida WASAPI). |
-| `src/game/` | Lógica pura sin Qt: `reference.py` (tu nota), `note_run.py` (ronda y puntuación), `levels.py`, `progress.py`. |
-| `src/ui/theme.py` | Paleta, escala y hoja de estilos. |
-| `src/ui/track.py` | La pista con QPainter (solo lee el estado del juego). |
-| `src/ui/practice.py` | Preparar, jugar y resultado. |
-| `src/ui/voicemap.py` | Mapa de tu voz. |
-| `src/ui/songs.py`, `main_window.py`, `panda.py` | Reproductor, ventana principal y mascota decorativa. |
-| `src/ui/firefly.py`, `tuner_widget.py` | Ejercicios anteriores. Ya no se usan; se conservan como referencia. |
+Teclas: **Espacio**, acción principal (empezar, pausar o seguir, repetir);
+**Esc**, pausa; **F11** o el botón «Pantalla completa».
 
-Coordinación y criterios: `docs/context.md`, `docs/diseno-juegos.md` y `docs/criterios-vocales.md`.
+## Cómo dar permiso al micrófono
+
+1. En «Escalas», pulsa **Activar micrófono**.
+2. El navegador pregunta si `localhost` puede usar el micrófono: pulsa
+   **Permitir**.
+3. Si lo denegaste antes, pulsa el icono a la izquierda de la dirección
+   (candado o ajustes), pon **Micrófono → Permitir** y recarga la página.
+
+Tras dar permiso, la lista muestra tus micrófonos por nombre. La app pide el
+audio sin cancelación de eco, supresión de ruido ni control automático de
+ganancia, porque alteran la altura.
+
+Con cascos Bluetooth (unos Sony WH-1000XM5) usando su propio micrófono,
+Windows los pasa a modo «manos libres» y el sonido baja de calidad. En la
+versión Python la salida por MME enmudecía con el micro abierto; el navegador
+usa la salida estándar de Windows (WASAPI), que sí sonaba en esa prueba. En la
+versión web aún está pendiente de comprobar.
+
+## Estructura del proyecto
+
+```
+index.html            la app (una página)
+start-canto.bat       arranque local
+app/css/              diseño: tokens.css (colores, tipografía, espacio, radios), base, componentes, pantallas
+app/js/
+  main.js             arranque, navegación y teclado
+  pitch/              notas (Hz → nota/cents), FFT y YIN
+  audio/              AudioContext, micrófono (AudioWorklet) y piano muestreado
+  game/               motor de rondas y puntuación, niveles, búsqueda de tu nota
+  exercises/          lógica del ejercicio «Escalas» (sin DOM)
+  state/              progreso (localStorage)
+  songs/              biblioteca de canciones y repetición A–B
+  ui/                 pantallas, pista en Canvas y mapa de voz
+assets/piano/         14 muestras del Salamander Grand Piano (CC-BY, ver LEEME.md)
+canciones/            tus canciones (local, fuera de Git)
+tests/web/            tests en Node y fixtures generados con el Python original
+legacy/               la versión anterior en Python/PySide6 (sólo referencia)
+docs/                 contexto del proyecto y criterios
+```
+
+- El progreso se guarda en el navegador (`localStorage`). La primera vez se
+  importa automáticamente el de la versión Python (`datos/progreso.json`).
+- Las canciones se leen de la carpeta `canciones/`. También puedes abrir un
+  archivo con «Abrir audio…».
+
+## Cómo ejecutar los tests
+
+Con Node.js (sin instalar nada más):
+
+```powershell
+npm test
+```
+
+Incluyen notas y cents, YIN, puntuación, niveles, progreso, búsqueda de nota,
+canciones y el recorrido completo del ejercicio. Una parte compara la web con
+resultados calculados por el código Python original. Para regenerar esos
+resultados:
+
+```powershell
+.\.venv\Scripts\python.exe tests\web\make_fixtures.py
+```

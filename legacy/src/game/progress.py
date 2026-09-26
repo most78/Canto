@@ -15,7 +15,7 @@ from pathlib import Path
 
 from game.levels import LEVELS
 
-DEFAULT_PATH = Path(__file__).resolve().parents[2] / 'datos' / 'progreso.json'
+DEFAULT_PATH = Path(__file__).resolve().parents[3] / 'datos' / 'progreso.json'
 START_LO, START_HI = -2, 5
 EMA_ALPHA = .35
 GROW_EMA = .7

@@ -12,7 +12,7 @@ import numpy as np
 from PySide6.QtCore import QEventLoop, QTimer, QUrl
 from PySide6.QtMultimedia import QAudioDecoder, QAudioFormat
 
-FOLDER = Path(__file__).resolve().parents[2] / 'assets' / 'piano'
+FOLDER = Path(__file__).resolve().parents[3] / 'assets' / 'piano'
 _NAMES = {'C': 0, 'Cs': 1, 'Ds': 3, 'E': 4, 'F': 5, 'Fs': 6, 'G': 7, 'A': 9}
 RELEASE = .25        # apagado suave al soltar la tecla
 

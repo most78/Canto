@@ -167,6 +167,7 @@ export class TrackRenderer {
     const dpr = this.canvas.width / Math.max(1, this.canvas.clientWidth);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const g = this.geometry();
+    if (g.bottom - g.top < 10 || g.w - g.ax < 10) return;   // aún sin tamaño (primer fotograma)
     const bg = ctx.createLinearGradient(0, 0, 0, g.h);
     bg.addColorStop(0, '#16191c');
     bg.addColorStop(1, this.c.bg);
