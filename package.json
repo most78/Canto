@@ -1,0 +1,9 @@
+{
+  "name": "canto",
+  "private": true,
+  "type": "module",
+  "description": "Canto: práctica de canto local en el navegador. Sin dependencias.",
+  "scripts": {
+    "test": "node --test \"tests/web/*.test.mjs\""
+  }
+}
