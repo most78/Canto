@@ -64,9 +64,24 @@ def make_tone(frequency, seconds, rate, channels=1, volume=.3):
     return np.column_stack([tone] * channels) if channels > 1 else tone
 
 
-def play_tone(frequency, seconds, device=None):
-    """Reproduce el tono sin bloquear. Lanza excepción si no hay salida posible."""
+def device_format(device=None):
+    """(frecuencia de muestreo, canales) de una salida."""
     info = sd.query_devices(device, 'output')
-    rate = int(info['default_samplerate'])
-    channels = min(2, int(info['max_output_channels'])) or 1
-    sd.play(make_tone(frequency, seconds, rate, channels), rate, device=device)
+    return int(info['default_samplerate']), min(2, int(info['max_output_channels'])) or 1
+
+
+def play_buffer(mono, rate, channels, device=None):
+    """Reproduce un buffer mono sin bloquear (lo duplica si la salida es estéreo)."""
+    data = np.column_stack([mono] * channels) if channels > 1 else mono
+    sd.play(np.ascontiguousarray(data, np.float32), rate, device=device)
+
+
+def synth_phrase(notes, rate):
+    """Respaldo sin muestras de piano: [(desfase_s, frecuencia, duración_s)] → buffer."""
+    end = max(start + seconds for start, _, seconds in notes)
+    out = np.zeros(int(rate * end) + 1, np.float32)
+    for start, frequency, seconds in notes:
+        x = make_tone(frequency, seconds, rate)
+        i = int(rate * start)
+        out[i:i + len(x)] += x[:len(out) - i]
+    return out

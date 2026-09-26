@@ -1,23 +1,26 @@
-"""Página «Pista de voz»: preparar tu nota → jugar la secuencia → resultado."""
+"""Página «Escalas»: preparar (micro, tu nota, nivel) → ronda → resultado."""
+import math
 import time
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
-    QCheckBox, QComboBox, QFrame, QGridLayout, QHBoxLayout, QLabel, QProgressBar,
-    QPushButton, QStackedWidget, QVBoxLayout, QWidget,
+    QComboBox, QFrame, QGridLayout, QHBoxLayout, QLabel, QProgressBar,
+    QPushButton, QScrollArea, QStackedWidget, QVBoxLayout, QWidget,
 )
 
-from audio.pitch import hz_to_note
-from game.note_run import HITS, JUDGEMENT_TEXT, NoteRun, classify, CUE_LENGTH
+from game.levels import LEVELS, midi_frequency, note_name, placements
+from game.note_run import HITS, JUDGEMENT_TEXT, build_round, classify
 from game.reference import ReferenceFinder
 from ui import theme
 from ui.panda import PandaBadge
 from ui.theme import px
 from ui.track import TrackView
+from ui.voicemap import VoiceMap
 
 NO_DATA_AFTER = 1.2        # sin bloques del micro durante este tiempo = aviso
 PITCH_MESSAGES = {'hit', 'low', 'high', 'unclear'}
 MESSAGE_HOLD = .6          # un mensaje de afinación se lee al menos esto
+LISTEN_SECONDS = 1.2       # «Escuchar mi nota»
 
 
 def label(text, name=None, wrap=True, align=None):
@@ -48,39 +51,53 @@ def card():
     return frame, layout
 
 
+def scrollable(page):
+    """Envuelve una pantalla para que se pueda desplazar si no cabe.
+
+    Así la ventana no exige un tamaño mínimo grande (Windows no maximiza bien
+    si el contenido pide casi toda la altura) y funciona en pantallas pequeñas.
+    """
+    area = QScrollArea()
+    area.setWidget(page)
+    area.setWidgetResizable(True)
+    area.setFrameShape(QFrame.NoFrame)
+    area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+    area.viewport().setAutoFillBackground(False)
+    return area
+
+
 def set_prop(widget, name, value):
     widget.setProperty(name, value)
     widget.style().unpolish(widget)
     widget.style().polish(widget)
 
 
-def note_label(frequency):
-    reading = hz_to_note(frequency)
-    return reading.label
-
-
-def cents_words(cents):
-    return f'{abs(round(cents))} cents'
+def midi_of_frequency(frequency):
+    return round(69 + 12 * math.log2(frequency / 440))
 
 
 class PracticePage(QWidget):
-    tone_requested = Signal(float, float)       # frecuencia, segundos
+    phrase_requested = Signal(object)           # [(desfase_s, frecuencia, duración_s)]
     mic_toggle_requested = Signal()
     songs_requested = Signal()
 
-    def __init__(self, clock=time.monotonic):
+    def __init__(self, progress, clock=time.monotonic):
         super().__init__()
+        self.progress = progress
         self.clock = clock
         self.finder = ReferenceFinder()
         self.finding = False
-        self.frequency = None
         self.run = None
+        self.level_index = progress.unlocked
+        self.round_level = None
         self.mic_on = False
         self.page_visible = False
         self.last_block = None
         self.tone_until = 0.0
         self.message_key = None
+        self.message_pitch = False
         self.message_since = 0.0
+        self.comfort_answered = False
         self.stack = QStackedWidget()
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
@@ -88,20 +105,31 @@ class PracticePage(QWidget):
         self.build_setup()
         self.build_play()
         self.build_results()
+        if progress.anchor_midi is not None:
+            self.find_text.setText('Tu nota guardada. Puedes buscar otra cuando quieras.')
         self.refresh_setup()
+
+    @property
+    def anchor_midi(self):
+        return self.progress.anchor_midi
+
+    @property
+    def frequency(self):
+        return midi_frequency(self.anchor_midi) if self.anchor_midi is not None else None
 
     # ================================================================ vistas
     def build_setup(self):
         page = QWidget()
         layout = QVBoxLayout(page)
-        layout.setContentsMargins(px(56), px(36), px(56), px(36))
-        layout.setSpacing(px(22))
+        layout.setContentsMargins(px(56), px(30), px(56), px(30))
+        layout.setSpacing(px(20))
         head = QHBoxLayout()
         titles = QVBoxLayout()
         titles.setSpacing(px(6))
-        titles.addWidget(label('PISTA DE VOZ', 'eyebrow'))
-        titles.addWidget(label('Canta tu nota cuando llegue a la línea', 'display'))
-        titles.addWidget(label('Una nota tuya, cinco veces, con descansos para respirar entre medias.', 'lead'))
+        titles.addWidget(label('ESCALAS', 'eyebrow'))
+        titles.addWidget(label('Escucha al piano y repite', 'display'))
+        titles.addWidget(label('Canta cada nota diciendo su nombre (la, si, do…) o con una vocal. '
+                               'Aprenderás qué nota es cada una.', 'lead'))
         head.addLayout(titles, 1)
         head.addWidget(PandaBadge(96), 0, Qt.AlignBottom)
         layout.addLayout(head)
@@ -118,21 +146,21 @@ class PracticePage(QWidget):
         self.mic_button = button('Activar micrófono', 'primary')
         self.mic_button.clicked.connect(self.mic_toggle_requested.emit)
         c.addWidget(self.mic_button)
-        self.mic_status = label('Usa auriculares: así la música y la referencia no entran en el micro.', 'muted')
+        self.mic_status = label('Tu voz no se graba ni se envía.', 'muted')
         c.addWidget(self.mic_status)
         c.addStretch()
         tips = label('<b>Antes de empezar</b><br>'
-                     '· Auriculares puestos.<br>'
                      '· Voz cómoda, como al hablar: no hace falta cantar fuerte.<br>'
                      '· Si algo molesta o cansa, para. Descansar también cuenta.', 'lead')
         tips.setTextFormat(Qt.RichText)
         c.addWidget(tips)
-        cards.addWidget(self.card_mic, 1)
+        cards.addWidget(self.card_mic, 4)
         # 2 · tu nota
         self.card_note, c = card()
-        c.addLayout(self.step_title('2', 'Encuentra tu nota'))
+        c.addLayout(self.step_title('2', 'Tu nota de partida'))
         c.addSpacing(px(4))
-        self.find_text = label('Haz una «u» cómoda durante un segundo y para. No hace falta aguantar.', 'muted')
+        self.find_text = label('Haz una «u» o un «do» cómodo durante un segundo y para. '
+                               'Las escalas se colocarán alrededor de esa nota.', 'muted')
         c.addWidget(self.find_text)
         self.note_big = label('—', 'bignote', align=Qt.AlignCenter)
         c.addWidget(self.note_big)
@@ -150,31 +178,38 @@ class PracticePage(QWidget):
         self.listen_button.clicked.connect(self.listen)
         row.addWidget(self.listen_button, 1)
         c.addLayout(row)
-        cards.addWidget(self.card_note, 1)
-        # 3 · jugar
+        cards.addWidget(self.card_note, 4)
+        # 3 · nivel
         self.card_play, c = card()
-        c.addLayout(self.step_title('3', '¿Te resulta cómoda?'))
-        c.addWidget(label('Sólo tú sabes si esa altura te sale fácil. Si no, busca otra: '
-                          'el juego usará esta nota fija durante toda la partida.', 'muted'))
-        self.guide = QCheckBox('Oírla antes de cada nota')
-        self.guide.setChecked(True)
-        c.addWidget(self.guide)
+        c.addLayout(self.step_title('3', 'Elige nivel'))
+        grid = QGridLayout()
+        grid.setSpacing(px(10))
+        self.level_buttons = []
+        for i, level in enumerate(LEVELS):
+            b = button(f'{i + 1} · {level.name}', 'chip')
+            b.setCheckable(True)
+            b.clicked.connect(lambda _=False, i=i: self.select_level(i))
+            grid.addWidget(b, i // 2, i % 2)
+            self.level_buttons.append(b)
+        c.addLayout(grid)
+        self.level_text = label('', 'lead')
+        self.level_text.setTextFormat(Qt.RichText)
+        c.addWidget(self.level_text)
         c.addStretch()
-        self.start_button = button('Sí, ¡a jugar!', 'primary')
+        self.range_text = label('', 'muted')
+        c.addWidget(self.range_text)
+        self.start_button = button('¡A jugar!', 'primary')
         self.start_button.clicked.connect(self.start_run)
         c.addWidget(self.start_button)
-        self.again_find = button('Buscar otra nota')
-        self.again_find.clicked.connect(self.start_finding)
-        c.addWidget(self.again_find)
-        cards.addWidget(self.card_play, 1)
+        cards.addWidget(self.card_play, 6)
         layout.addLayout(cards, 1)
 
         legend = QHBoxLayout()
         legend.setSpacing(px(20))
         for mark, colour, text in [
-            ('▬', theme.PINK, 'La barra es tu nota: canta mientras cruza la línea AHORA.'),
+            ('▬', theme.VIOLET, 'Barras translúcidas: escucha al piano. No puntúan.'),
+            ('▬', theme.PINK, 'Barras rosas: tu turno. Canta la nota que indican al cruzar AHORA.'),
             ('●', theme.GREEN, 'La bola es tu voz: arriba = más agudo, abajo = más grave.'),
-            ('~', theme.CYAN, 'Entre notas, respira. Ahí no se puntúa nada.'),
         ]:
             item = QHBoxLayout()
             icon = label(mark, wrap=False)
@@ -183,14 +218,13 @@ class PracticePage(QWidget):
             item.addWidget(label(text, 'lead'), 1)
             legend.addLayout(item, 1)
         layout.addLayout(legend)
-        self.stack.addWidget(page)
-        self.setup_page = page
+        self.setup_page = scrollable(page)
+        self.stack.addWidget(self.setup_page)
 
     def step_title(self, number, text):
         row = QHBoxLayout()
         row.setSpacing(px(14))
-        badge = label(number, 'step', wrap=False, align=Qt.AlignCenter)
-        row.addWidget(badge)
+        row.addWidget(label(number, 'step', wrap=False, align=Qt.AlignCenter))
         row.addWidget(label(text, 'h2'), 1)
         return row
 
@@ -225,12 +259,12 @@ class PracticePage(QWidget):
     def build_results(self):
         page = QWidget()
         layout = QHBoxLayout(page)
-        layout.setContentsMargins(px(72), px(48), px(72), px(48))
-        layout.setSpacing(px(48))
+        layout.setContentsMargins(px(56), px(36), px(56), px(36))
+        layout.setSpacing(px(40))
         left = QVBoxLayout()
-        left.setSpacing(px(12))
+        left.setSpacing(px(10))
         left.addStretch()
-        self.result_panda = PandaBadge(170, waving=True)
+        self.result_panda = PandaBadge(150, waving=True)
         left.addWidget(self.result_panda, 0, Qt.AlignHCenter)
         self.stars = label('', wrap=False, align=Qt.AlignCenter)
         left.addWidget(self.stars)
@@ -242,66 +276,95 @@ class PracticePage(QWidget):
         layout.addLayout(left, 2)
 
         right_card, right = card()
-        right.setSpacing(px(18))
-        right.addWidget(label('TU PARTIDA', 'eyebrow'))
+        right.setSpacing(px(14))
+        self.result_level = label('', 'eyebrow')
+        right.addWidget(self.result_level)
         self.result_hits = label('', 'h1')
         right.addWidget(self.result_hits)
-        self.chips = QGridLayout()
-        self.chips.setSpacing(px(10))
-        right.addLayout(self.chips)
+        self.attempt_rows = QVBoxLayout()
+        self.attempt_rows.setSpacing(px(8))
+        right.addLayout(self.attempt_rows)
         self.result_lines = label('', 'lead')
         self.result_lines.setTextFormat(Qt.RichText)
         right.addWidget(self.result_lines)
+        right.addWidget(label('MAPA DE TU VOZ · % de acierto por nota', 'eyebrow'))
+        self.voice_map = VoiceMap()
+        right.addWidget(self.voice_map)
         right.addStretch()
         comfort = QHBoxLayout()
         comfort.addWidget(label('¿Te resultó cómodo?', 'h2'))
-        yes = button('Sí')
-        yes.clicked.connect(lambda: self.result_note.setText('¡Genial! Repite cuando quieras, con calma.'))
-        comfort.addWidget(yes)
-        hard = button('Me costó')
-        hard.clicked.connect(self.found_it_hard)
-        comfort.addWidget(hard)
+        self.comfort_yes = button('Sí')
+        self.comfort_yes.clicked.connect(lambda: self.answer_comfort(True))
+        comfort.addWidget(self.comfort_yes)
+        self.comfort_no = button('Me costó')
+        self.comfort_no.clicked.connect(lambda: self.answer_comfort(False))
+        comfort.addWidget(self.comfort_no)
         comfort.addStretch()
         right.addLayout(comfort)
-        self.result_note = label('', 'muted')
+        self.result_note = label('', 'lead')
         right.addWidget(self.result_note)
         buttons = QHBoxLayout()
         buttons.setSpacing(px(16))
-        self.again_button = button('↻  Otra vez', 'primary')
+        self.again_button = button('Otra vez', 'primary')
         self.again_button.clicked.connect(self.start_run)
         buttons.addWidget(self.again_button)
-        change = button('Cambiar de nota')
+        self.next_button = button('Siguiente nivel')
+        self.next_button.clicked.connect(self.next_level)
+        buttons.addWidget(self.next_button)
+        change = button('Cambiar nivel')
         change.clicked.connect(self.back_to_setup)
         buttons.addWidget(change)
-        songs = button('Canciones')
-        songs.clicked.connect(self.songs_requested.emit)
-        buttons.addWidget(songs)
         right.addLayout(buttons)
-        layout.addWidget(right_card, 3)
-        self.stack.addWidget(page)
-        self.results_page = page
+        layout.addWidget(right_card, 4)
+        self.results_page = scrollable(page)
+        self.stack.addWidget(self.results_page)
 
     # ============================================================ estado
     def refresh_setup(self):
-        found = self.frequency is not None
+        found = self.anchor_midi is not None
         self.devices.setEnabled(not self.mic_on)
         self.mic_button.setText('Desactivar micrófono' if self.mic_on else 'Activar micrófono')
         self.mic_button.setObjectName('' if self.mic_on else 'primary')
         self.find_button.setEnabled(self.mic_on and not self.finding)
-        self.find_button.setText('Escuchando…' if self.finding else 'Buscar otra vez' if found else 'Encontrar mi nota')
+        self.find_button.setText('Escuchando…' if self.finding else 'Buscar otra' if found else 'Encontrar mi nota')
         self.find_button.setObjectName('primary' if self.mic_on and not found else '')
         self.listen_button.setEnabled(found and not self.finding)
-        self.start_button.setEnabled(found and self.mic_on and not self.finding)
-        self.again_find.setEnabled(found and self.mic_on and not self.finding)
+        if found and not self.finding:
+            self.note_big.setText(note_name(self.anchor_midi))
+            self.find_progress.setValue(100)
+        for i, b in enumerate(self.level_buttons):
+            b.setEnabled(i <= self.progress.unlocked)
+            b.setChecked(i == self.level_index)
+            b.setText(f'{i + 1} · {LEVELS[i].name}' if i <= self.progress.unlocked else f'{i + 1} · bloqueado')
+        level = LEVELS[self.level_index]
+        starts = placements(level, self.progress.lo, self.progress.hi) if found else []
+        text = f'<b>{level.name}.</b> {level.description} Margen ±{level.tolerance} cents.'
+        if found and starts:
+            names = ' · '.join(note_name(self.anchor_midi + starts[0] + k) for k in level.pattern)
+            text += f'<br>Primer intento: <b>{names}</b>'
+        elif found:
+            text += (f'<br>Necesita {level.span + 1} notas de rango y ahora tienes '
+                     f'{self.progress.hi - self.progress.lo + 1}. Tu rango crece al acertar los bordes '
+                     'y decir que fue cómodo.')
+        self.level_text.setText(text)
+        if found:
+            low, high = self.progress.range_midi()
+            self.range_text.setText(f'Tu rango de trabajo: {note_name(low)} – {note_name(high)} '
+                                    f'({high - low + 1} notas)')
+        else:
+            self.range_text.setText('Primero encuentra tu nota de partida.')
+        self.start_button.setEnabled(found and self.mic_on and not self.finding and bool(starts))
         step = 0 if not self.mic_on else 1 if not found or self.finding else 2
         for i, frame in enumerate((self.card_mic, self.card_note, self.card_play)):
             set_prop(frame, 'active', 'true' if i == step else 'false')
         for b in (self.mic_button, self.find_button):
             b.style().unpolish(b)
             b.style().polish(b)
-        if found:
-            self.note_big.setText(note_label(self.frequency))
-            self.find_progress.setValue(100)
+
+    def select_level(self, index):
+        if index <= self.progress.unlocked:
+            self.level_index = index
+        self.refresh_setup()
 
     def set_mic(self, on, message=None):
         self.mic_on = on
@@ -328,16 +391,16 @@ class PracticePage(QWidget):
             self.find_text.setText('Búsqueda detenida. Pulsa «Encontrar mi nota» cuando quieras.')
             self.refresh_setup()
 
-    # ============================================================ encontrar nota
+    # ============================================================ tu nota
     def start_finding(self):
         if not self.mic_on:
             return
         self.finder.reset()
         self.finding = True
-        self.frequency = None
         self.note_big.setText('…')
         self.find_progress.setValue(0)
-        self.find_text.setText('Haz una «u» cómoda de un segundo y después para. Termina sola en 4 s como máximo.')
+        self.find_text.setText('Haz una «u» o un «do» cómodo de un segundo y después para. '
+                               'Termina sola en 4 s como máximo.')
         self.stack.setCurrentWidget(self.setup_page)
         self.refresh_setup()
 
@@ -351,25 +414,33 @@ class PracticePage(QWidget):
         self.find_progress.setValue(round(self.finder.progress * 100))
         if result is not None:
             self.finding = False
-            self.frequency = result
-            self.hearing.setText(f'≈ {result:.0f} Hz')
-            self.find_text.setText('¡La tengo! Escúchala si quieres y confirma si es cómoda.')
+            midi = midi_of_frequency(result)
+            self.progress.set_anchor(midi)
+            self.progress.save()
+            off = round(1200 * math.log2(result / midi_frequency(midi)))
+            self.hearing.setText(f'Cantaste {result:.0f} Hz ({off:+d} cents de {note_name(midi)})')
+            self.find_text.setText('¡La tengo! Ajustada a la nota más cercana. Escúchala al piano '
+                                   'y, si no te resulta cómoda, busca otra.')
             self.refresh_setup()
         elif self.finder.failed:
             self.finding = False
             reason, action = self.finder.failed
-            self.note_big.setText('—')
             self.find_progress.setValue(0)
             self.find_text.setText(f'Paramos aquí. {reason} {action}')
             self.hearing.setText(self.finder.diagnostic())
             self.refresh_setup()
 
-    # ============================================================ partida
+    # ============================================================ ronda
     def start_run(self):
-        if self.frequency is None or not self.mic_on:
+        if self.anchor_midi is None or not self.mic_on:
             return
-        self.run = NoteRun(self.frequency, guide=self.guide.isChecked())
-        self.track.set_run(self.run, note_label(self.frequency))
+        level = LEVELS[self.level_index]
+        starts = placements(level, self.progress.lo, self.progress.hi)
+        if not starts:
+            return
+        self.round_level = self.level_index
+        self.run = build_round(self.frequency, level.pattern, starts, level.note_len, level.tolerance)
+        self.track.set_run(self.run, self.anchor_midi, f'Nivel {self.level_index + 1} · {level.name}')
         self.message_key = None
         self.stack.setCurrentWidget(self.play_page)
         self.run.start(self.clock())
@@ -422,9 +493,9 @@ class PracticePage(QWidget):
         if self.frequency is None:
             return
         if self.run and self.run.state == 'running':
-            return      # durante la partida la referencia la programa el juego
-        self.tone_until = self.clock() + CUE_LENGTH + .35
-        self.tone_requested.emit(self.frequency, CUE_LENGTH)
+            return      # durante la ronda el piano lo programa el juego
+        self.tone_until = self.clock() + LISTEN_SECONDS + .6
+        self.phrase_requested.emit([(0.0, self.frequency, LISTEN_SECONDS)])
 
     def feed(self, stamp, duration, frequency, level):
         """Un bloque analizado del micrófono (marca monotónica de final)."""
@@ -437,13 +508,13 @@ class PracticePage(QWidget):
             self.run.feed(stamp, duration, frequency, level)
 
     def tick(self):
-        """Llamado por la ventana ~30 veces por segundo: juicios, referencias y mensajes."""
+        """Llamado por la ventana ~30 veces por segundo: juicios, piano y mensajes."""
         run = self.run
         if not run or run.state != 'running':
             return
         now = self.clock()
         for cue in run.due_cues(now):
-            self.tone_requested.emit(run.target, CUE_LENGTH)
+            self.phrase_requested.emit([(off, self.frequency * 2 ** (k / 12), d) for off, k, d in cue['notes']])
         for index, judgement in run.update(now):
             self.track.add_judgement(index, judgement)
         if run.state == 'finished':
@@ -453,46 +524,50 @@ class PracticePage(QWidget):
 
     def update_banner(self, now):
         run = self.run
-        t = run.time(now)
         if self.last_block is not None and now - self.last_block > NO_DATA_AFTER:
             self.show_message('nodata', 'No llegan datos del micrófono · revisa la conexión', theme.ORANGE, now)
             return
-        first = run.notes[0]
-        hint = run.hint(now)
-        if t < first.start:
-            if hint == 'muted' or t < .4 + CUE_LENGTH:
-                self.show_message('intro', 'Escucha tu nota… (no puntúa)', theme.TEXT, now)
-            else:
-                self.show_message('ready', 'Prepárate: canta cuando la barra llegue a la línea', theme.TEXT, now)
-            return
-        if run.active_note(now) is not None:
+        phase, attempt = run.phase(now)
+        if phase == 'intro':
+            self.show_message('intro', 'Primero escucha al piano (no puntúa)', theme.TEXT, now)
+        elif phase == 'listen':
+            self.show_message(f'listen{attempt}', 'Escucha… (no puntúa)', theme.TEXT, now)
+        elif phase == 'turn':
+            first = next(n for n in run.sung if n.attempt == attempt)
+            self.show_message(f'turn{attempt}', f'¡Tu turno! Empieza en {note_name(self.anchor_midi + first.semitone)}',
+                              theme.PINK, now)
+        elif phase == 'sing':
+            index = run.active_note(now)
+            if index is None:
+                return
+            name = note_name(self.anchor_midi + run.notes[index].semitone)
+            hint = run.hint(now)
             if hint is None:
                 return
             text, colour = {
-                'hit': ('¡Ahí! Suave y cómodo', theme.GREEN),
-                'low': ('Un poco más agudo  ▲', theme.CYAN),
-                'high': ('Un poco más grave  ▼', theme.ORANGE),
+                'hit': (f'¡Ahí! {name}', theme.GREEN),
+                'low': (f'{name} · un poco más agudo  ▲', theme.CYAN),
+                'high': (f'{name} · un poco más grave  ▼', theme.ORANGE),
                 'unclear': ('No te oigo claro · no cuenta como fallo', theme.MUTED),
-                'muted': ('Suena la referencia · no puntúa', theme.MUTED),
-                'silence': ('¡Ahora! Canta tu nota', theme.PINK),
+                'muted': ('Suena el piano · no puntúa', theme.MUTED),
+                'free': (f'Canta: {name}', theme.PINK),
+                'silence': (f'Canta: {name}', theme.PINK),
             }[hint]
-            self.show_message(hint if hint != 'silence' else 'go', text, colour, now)
-            return
-        if hint == 'muted':
-            self.show_message('cue', 'Escucha tu nota… (no puntúa)', theme.TEXT, now)
-        elif run.next_note(now) is not None:
-            self.show_message('rest', 'Respira… la siguiente llega sola', theme.MUTED, now)
+            self.show_message(f'{hint}{index}', text, colour, now, pitch=hint in PITCH_MESSAGES)
+        elif phase == 'rest':
+            self.show_message(f'rest{attempt}', 'Respira… el piano tocará el siguiente intento', theme.MUTED, now)
         else:
-            self.show_message('end', '¡Última hecha!', theme.GOLD, now)
+            self.show_message('end', '¡Ronda terminada!', theme.GOLD, now)
 
-    def show_message(self, key, text, colour, now=None, force=False):
+    def show_message(self, key, text, colour, now=None, force=False, pitch=False):
         now = self.clock() if now is None else now
         if not force and key == self.message_key:
             return
-        if (not force and self.message_key in PITCH_MESSAGES and key in PITCH_MESSAGES
-                and now - self.message_since < MESSAGE_HOLD):
+        # Dos indicaciones de afinación seguidas: la primera se lee al menos MESSAGE_HOLD.
+        if not force and pitch and self.message_pitch and now - self.message_since < MESSAGE_HOLD:
             return
         self.message_key = key
+        self.message_pitch = pitch
         self.message_since = now
         self.banner.setText(text)
         self.banner.setStyleSheet(f'color: {colour};')
@@ -501,58 +576,91 @@ class PracticePage(QWidget):
     def show_results(self):
         run = self.run
         s = run.summary()
+        level = LEVELS[self.round_level]
+        measured = [(self.anchor_midi + n.semitone, n.ratio) for n in run.sung
+                    if n.judgement and n.judgement not in ('unclear', 'silent')]
+        unlocked_new = self.progress.record_round(self.round_level, s, measured) if measured else False
         stars = s['stars']
+        passes = sum(x >= .8 - 1e-9 for x in s['attempt_scores'])
         if stars is None:
             title = 'No he podido oírte bien'
+        elif s['passed']:
+            title = '¡Nivel superado!' if stars < 3 else '¡Perfecto!'
         else:
-            title = ['¡Sigue probando!', '¡Buen comienzo!', '¡Muy bien!', '¡Increíble!'][stars]
+            title = '¡Casi!' if passes == 1 else '¡Sigue probando!'
         self.result_title.setText(title)
-        self.result_panda.waving = bool(stars and stars >= 2)
+        self.result_panda.waving = bool(s['passed'])
         shown = stars or 0
         self.stars.setText(
             f'<span style="color:{theme.GOLD}">{"★" * shown}</span>'
             f'<span style="color:{theme.SURFACE_2}">{"★" * (3 - shown)}</span>')
         self.stars.setStyleSheet(f'font-size: {px(84)}px;')
         self.result_score.setText(f'{s["score"]:,} puntos'.replace(',', '.'))
-        self.result_hits.setText(f'{s["hits"]} de {s["notes"]} notas acertadas')
-        while self.chips.count():
-            item = self.chips.takeAt(0)
-            item.widget().deleteLater()
-        for i, note in enumerate(run.notes):
-            j = note.judgement
-            text = JUDGEMENT_TEXT.get(j, 'Sin jugar')
-            bg = (theme.GOLD if j in HITS else '#5d548f' if j and j.startswith('miss') else theme.SURFACE_2)
-            fg = theme.INK if j in HITS else theme.TEXT
-            chip = label(f'{i + 1} · {text}', wrap=False, align=Qt.AlignCenter)
-            chip.setStyleSheet(f'background:{bg}; color:{fg}; border-radius:{px(18)}px; '
-                               f'padding:{px(10)}px {px(14)}px; font-size:{px(20)}px; font-weight:800;')
-            self.chips.addWidget(chip, i // 3, i % 3)
-        lines = []
+        self.result_level.setText(f'NIVEL {self.round_level + 1} · {level.name.upper()}')
+        self.result_hits.setText(f'{passes} de {len(s["attempt_scores"])} intentos con 80 % o más')
+        while self.attempt_rows.count():
+            row = self.attempt_rows.takeAt(0).layout()
+            while row.count():
+                row.takeAt(0).widget().deleteLater()
+        for a, score in zip(run.attempts, s['attempt_scores']):
+            row = QHBoxLayout()
+            row.setSpacing(px(6))
+            row.addWidget(label(f'Intento {a + 1} · {round(score * 100)} %', 'lead', wrap=False))
+            for note in (n for n in run.sung if n.attempt == a):
+                j = note.judgement
+                bg = theme.GOLD if j in HITS else '#5d548f' if j and j.startswith('miss') else theme.SURFACE_2
+                fg = theme.INK if j in HITS else theme.TEXT
+                chip = label(note_name(self.anchor_midi + note.semitone), wrap=False, align=Qt.AlignCenter)
+                chip.setToolTip(JUDGEMENT_TEXT.get(j, 'Sin jugar'))
+                chip.setStyleSheet(f'background:{bg}; color:{fg}; border-radius:{px(14)}px; '
+                                   f'padding:{px(6)}px {px(10)}px; font-size:{px(18)}px; font-weight:800;')
+                row.addWidget(chip)
+            row.addStretch()
+            self.attempt_rows.addLayout(row)
+        lines = ['Dorado = acertada · morado = fallada · gris = sin medir (no cuenta como fallo).']
         if s['in_zone'] is not None:
-            lines.append(f'El <b>{round(s["in_zone"] * 100)} %</b> del tiempo que cantaste estuvo dentro de tu nota.')
+            lines.append(f'El <b>{round(s["in_zone"] * 100)} %</b> del tiempo que cantaste estuvo dentro de la nota.')
         tendency = s['tendency']
-        if tendency is not None:
-            if abs(tendency) < 15:
-                lines.append('Tu voz quedó centrada en la nota.')
-            else:
-                side = 'grave' if tendency < 0 else 'aguda'
-                lines.append(f'Tendencia: un poco <b>{side}</b> ({cents_words(tendency)}; 100 cents = 1 semitono).')
-        unmeasured = s['unclear'] + s['silent']
-        if unmeasured:
-            lines.append(f'{unmeasured} nota{"s" if unmeasured > 1 else ""} sin medir (silencio o señal poco clara): '
-                         'no cuentan como fallo.')
+        if tendency is not None and abs(tendency) >= 15:
+            side = 'grave' if tendency < 0 else 'aguda'
+            lines.append(f'Tendencia: un poco <b>{side}</b> ({abs(round(tendency))} cents; 100 cents = 1 semitono).')
         if stars is None:
             lines.append('Revisa el micrófono o acércate un poco. No hace falta cantar más fuerte.')
-        if s['best_streak'] >= 2:
-            lines.append(f'Mejor racha: {s["best_streak"]} notas seguidas.')
+        if unlocked_new:
+            lines.append(f'<b>Desbloqueado:</b> nivel {self.progress.unlocked + 1} · {LEVELS[self.progress.unlocked].name}.')
         self.result_lines.setText('<br>'.join(lines))
+        self.voice_map.set_progress(self.progress, {m for m, _ in measured})
+        self.comfort_answered = False
+        self.comfort_yes.setEnabled(bool(measured))
+        self.comfort_no.setEnabled(bool(measured))
         self.result_note.setText('')
+        self.next_button.setEnabled(self.round_level < self.progress.unlocked)
         self.stack.setCurrentWidget(self.results_page)
 
-    def found_it_hard(self):
-        self.result_note.setText('Gracias. Descansa un poco y busca una nota más fácil.')
-        self.back_to_setup()
-        self.find_text.setText('Descansa y, cuando quieras, busca una nota que te salga más fácil.')
+    def answer_comfort(self, comfortable):
+        if self.comfort_answered:
+            return
+        self.comfort_answered = True
+        self.comfort_yes.setEnabled(False)
+        self.comfort_no.setEnabled(False)
+        if not comfortable:
+            self.result_note.setText('Gracias. Descansa un poco; puedes repetir un nivel anterior. '
+                                     'Tu rango no se amplía tras una ronda incómoda.')
+            return
+        grown = self.progress.grow_range()
+        if grown:
+            names = ', '.join(f'{note_name(m)} ({side})' for side, m in grown)
+            self.result_note.setText(f'¡Tu rango crece! Nueva nota: {names}.')
+        else:
+            low, high = self.progress.range_midi()
+            self.result_note.setText(f'¡Bien! Tu rango crecerá cuando afiances los bordes: '
+                                     f'{note_name(low)} y {note_name(high)}.')
+        self.voice_map.set_progress(self.progress, self.voice_map.highlight)
+
+    def next_level(self):
+        if self.round_level < self.progress.unlocked:
+            self.level_index = self.round_level + 1
+            self.back_to_setup()
 
     def back_to_setup(self):
         self.stack.setCurrentWidget(self.setup_page)

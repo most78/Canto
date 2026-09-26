@@ -87,6 +87,8 @@ QPushButton#nav:checked {{ background: {PINK}; color: {TEXT}; border-color: {PIN
 QPushButton#round {{ background: {PINK}; border: none; border-radius: {s(96) // 2 - 1}px; min-width: {s(96)}px; max-width: {s(96)}px;
     min-height: {s(96)}px; max-height: {s(96)}px; padding: 0; font-size: {s(34)}px; font-family: 'Segoe MDL2 Assets'; }}
 QPushButton#round:hover {{ background: #ff7db4; }}
+QPushButton#chip {{ font-size: {s(18)}px; padding: {s(10)}px {s(12)}px; border-radius: {s(18)}px; }}
+QPushButton#chip:checked {{ background: {VIOLET}; border-color: {GOLD}; color: {TEXT}; }}
 QComboBox {{ background: {SURFACE_2}; border: {s(2)}px solid {LINE}; border-radius: {s(18)}px;
     padding: {s(10)}px {s(18)}px; font-size: {s(20)}px; min-height: {s(30)}px; }}
 QComboBox QAbstractItemView {{ background: {SURFACE}; selection-background-color: {VIOLET}; font-size: {s(20)}px; }}
@@ -100,5 +102,9 @@ QSlider::sub-page:horizontal {{ background: {PINK}; border-radius: {s(6)}px; }}
 QSlider::handle:horizontal {{ background: {TEXT}; width: {s(30)}px; margin: -{s(10)}px 0; border-radius: {s(15)}px; }}
 QProgressBar {{ background: {SURFACE_2}; border: none; border-radius: {s(10)}px; min-height: {s(20)}px; max-height: {s(20)}px; color: transparent; }}
 QProgressBar::chunk {{ background: {GOLD}; border-radius: {s(10)}px; }}
+QScrollArea {{ border: none; background: transparent; }}
+QScrollBar:vertical {{ background: transparent; width: {s(12)}px; }}
+QScrollBar::handle:vertical {{ background: {LINE}; border-radius: {s(6)}px; min-height: {s(40)}px; }}
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{ height: 0; }}
 QToolTip {{ background: {SURFACE}; color: {TEXT}; border: 1px solid {LINE}; font-size: {s(18)}px; }}
 """

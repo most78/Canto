@@ -1,9 +1,10 @@
 # Canto: el claro del panda
 
-> **Sustituido (26/09/2026).** Marcos pidió cambiar este juego por «Pista de
-> voz»: una pista tipo Guitar Hero en la que las notas avanzan hacia una línea
-> AHORA, con eje vertical de altura. El panda queda sólo como detalle
-> decorativo. El estado actual está en `docs/context.md` y `README.md`.
+> **Sustituido (26/09/2026).** Marcos pidió cambiar este juego por una pista
+> tipo Guitar Hero en la que las notas avanzan hacia una línea AHORA, con eje
+> vertical de altura. Después lo amplió a **«Escalas»**: escuchar una frase al
+> piano y repetirla, con niveles, un mapa de la voz y un rango que crece con
+> acierto y comodidad. El panda queda sólo como detalle decorativo. El estado actual está en `docs/context.md` y `README.md`.
 > Siguen vigentes los principios de puntuación de este documento: objetivo
 > fijo, sólo audio nuevo, silencio y ruido sin penalizar, sin premio por
 > volumen ni por aguantar, y 400 ms antes de dar una indicación. La mecánica

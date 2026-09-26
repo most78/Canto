@@ -8,3 +8,6 @@ dist/
 # Audio propio con copyright: se queda en local, nunca en el repo
 canciones/
 .backup/
+
+# Progreso local del jugador
+datos/

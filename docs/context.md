@@ -1,104 +1,117 @@
 # Canto — Contexto del proyecto
 
-## ESTADO ACTUAL (26/09/2026) · «Pista de voz» y rediseño general
+## ESTADO ACTUAL (26/09/2026, noche) · juego «Escalas»
 
-Lee esto primero. Las secciones de más abajo son historial y pueden describir
-decisiones ya sustituidas, como el panda protagonista, las luciérnagas o los
-3 s acumulados.
+Lee esto primero. Lo de más abajo es historial y puede describir decisiones
+ya sustituidas: el panda protagonista, los 3 s acumulados o «Pista de voz» con
+una sola nota.
 
-### Qué pidió Marcos
+### Qué pidió Marcos y qué se decidió con él
 
-Replantear el ejercicio de buscar y repetir una nota como un juego tipo Guitar
-Hero controlado cantando, y rediseñar toda la app para pantalla grande:
-colorida, legible a distancia y con el área de juego como protagonista. Los
-pandas quedan como detalle decorativo. Esta petición sustituye las decisiones
-de diseño anteriores que entren en conflicto con ella.
+- **Rediseño para pantalla grande.** Colorida y legible a distancia, con el
+  juego como protagonista. El panda queda solo como decoración.
+- **Juego tipo Guitar Hero cantando.** Primero se hizo con una sola nota
+  («Pista de voz»). Después Marcos lo replanteó: la nota cómoda es solo el
+  **punto de partida**, y el juego son **escalas dentro de su rango**, cada
+  vez más difíciles. El reto está en que unas notas le salgan y otras no.
+- **Decisiones tomadas con él:**
+  - cada intento es **escucha y luego canta**: el piano no se puntúa nunca;
+  - avance = **mapa de voz** por semitono + **niveles** (80 % en 2 de 3
+    intentos) + **rango** que crece solo con acierto **y** comodidad
+    declarada;
+  - **piano real** con muestras Salamander descargadas con su permiso (el
+    sintetizador de Windows y la síntesis aditiva no le gustaron);
+  - la nota única se **sustituye** por las escalas;
+  - **nombres de nota en cada barra** («do2, re4…»). Canta diciendo el nombre
+    de la nota: así aprende cuál es.
+- **Cascos:** usará siempre unos Sony WH-1000XM5 Bluetooth, también como
+  micrófono. Con su micro abierto la salida MME enmudece y WASAPI sí suena
+  (comprobado con él con pitidos). Por eso `audio/output.py` elige la versión
+  WASAPI de la salida predeterminada.
 
 ### Qué hay implementado
 
-- **Motor puro** en `src/game/` (sin Qt, con tests):
-  - `reference.py`: búsqueda de nota propia. Es la misma regla de antes,
-    extraída de `firefly.py`: grupo de lecturas a ±100 cents, 0,3 s y 3
-    bloques, límite de 4 s y diagnóstico del fallo.
-  - `note_run.py`: secuencia de 5 notas (1–2 s) con 4 s de descanso y 4,5 s
-    de entrada. Tiene reloj de juego con pausa, clasificación de cada bloque
-    (hit, low, high, unclear, silence, muted) y juicio por nota.
-  - Juicio por nota: ratio = acierto ÷ (duración − 0,25 s de reacción).
-    Con ≥0,75 es perfecta, ≥0,45 muy bien y ≥0,15 bien. Si no, es fallo con
-    dirección cuando hubo ≥25 % medido; «no te oí claro» cuando hubo ≥25 % de
-    ruido; y si no, «sin cantar».
-  - Los fallos rompen la racha; las notas sin medir no.
-  - Resumen final: estrellas, tiempo en zona, tendencia (mediana ponderada en
-    cents) y notas sin medir.
-  - Referencia opcional antes de cada nota. El motor silencia su ventana más
-    350 ms.
-- **Captura** (`src/audio/capture.py`): cada bloque lleva la marca
-  `time.monotonic()` del callback. `drain()` devuelve todos los bloques
-  pendientes (cola de 16). Antes `latest()` descartaba bloques; se mantiene
-  por compatibilidad.
-- **Interfaz**:
-  - `theme.py`: escala con `px()`, que depende de la altura de la pantalla.
-  - `track.py`: la pista con QPainter y una animación de 60 fps que no puntúa.
-  - `practice.py`: preparar (3 tarjetas), jugar y resultado.
-  - `songs.py`: el reproductor rediseñado.
-  - `main_window.py`: cabecera con navegación en pastillas, estado del micro y
-    botón de pantalla completa. Lee el micro cada 30 ms y reproduce el tono con
-    `sd.play`.
-  - `panda.py`: la mascota.
-  - `firefly.py` y `tuner_widget.py` ya no se usan; se conservan con sus tests.
-- La copia del estado anterior está en `.backup/2026-09-26-antes-pista/`
-  (fuera de Git) y en el primer commit del repositorio.
+- **`src/game/note_run.py`: motor genérico sin Qt.**
+  - Cada `Note` lleva su semitono respecto a la nota base, su intento y si es
+    `demo` (escucha).
+  - `build_round()` monta 3 intentos: escucha (con cue para el piano y audio
+    silenciado más 0,6 s de cola), «¡tu turno!» (1,6 s), canto y 3 s de
+    descanso.
+  - Mantiene las reglas anteriores: solo audio nuevo, sin volumen, silencio y
+    ruido no son fallo, pausa, persistencia de 400 ms y octava = fallo.
+  - `phase()` da la fase para textos y dibujo.
+- **`src/game/levels.py`:** 9 niveles como datos (patrón en semitonos,
+  duración por nota y margen). `placements()` coloca los 3 intentos dentro del
+  rango: cerca de la nota, borde agudo y borde grave. `note_name()` da los
+  nombres en español.
+- **`src/game/progress.py`:** nota base (MIDI), rango `lo/hi`, niveles
+  desbloqueados, historial y mapa de voz (media móvil, α 0,35). Se guarda en
+  `datos/progreso.json`, que está en `.gitignore`. `grow_range()` amplía un
+  borde si su nota tiene media ≥0,7 con n ≥3; solo se llama cuando Marcos
+  responde «Sí» a «¿Te resultó cómodo?».
+- **`src/audio/piano.py`:**
+  - 14 MP3 de Salamander en `assets/piano/` (CC-BY; atribución en `LEEME.md`),
+    descodificados con `QAudioDecoder` sin dependencias nuevas;
+  - cada muestra se calibra con YIN y se reafina ±1,5 semitonos como máximo,
+    con un error de ~1–2 cents;
+  - `phrase()` monta la frase entera en un solo buffer.
+- **`src/audio/output.py`:** elección de la salida WASAPI, reproducción del
+  buffer y tono sintético de respaldo.
+- **UI:**
+  - `track.py`: eje con nombres de nota, barras de escucha y de turno con su
+    nombre, recortes al carril y marcador de intentos;
+  - `practice.py`: tarjetas de micro, nota y nivel; ronda; resultado con los
+    intentos, el mapa de voz y la pregunta de comodidad;
+  - `voicemap.py`: el mapa de voz;
+  - las pantallas de contenido van dentro de un `QScrollArea`. Si el contenido
+    pedía casi toda la altura, Windows no maximizaba la ventana.
+- **Sin uso:** `firefly.py`, `tuner_widget.py` y la síntesis `make_tone`, que
+  queda solo como respaldo.
 
 ### Cómo arrancar y probar
 
 ```powershell
-.\iniciar.bat                                            # o: .\.venv\Scripts\python.exe src\main.py
-.\.venv\Scripts\python.exe -m unittest discover -s tests -v   # 43 tests
+.\iniciar.bat                                                # o: .\.venv\Scripts\python.exe src\main.py
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v   # 53 tests
 .\.venv\Scripts\python.exe tests\smoke_ui.py                  # recorrido completo + capturas docs/preview-*.png
 ```
 
-### Verificado por software
+### Verificado
 
-- 43 tests unitarios pasan. Cubren la regla de puntuación:
-  - el mismo resultado con bloques de 20 a 128 ms;
-  - descansos que no suman y aguantar más que no suma;
-  - volumen que no influye;
-  - silencio y ruido que no son fallo;
-  - una octava que es fallo;
-  - bloques repetidos o antiguos que no suman;
-  - pausa y referencia que no puntúan;
-  - la persistencia de 400 ms en las indicaciones;
-  - el objetivo fijo.
-- La prueba de humo de la interfaz pasa: recorrido completo con reloj simulado.
-- Revisé visualmente las capturas a 1920×1080 y abrí la app real en la
-  pantalla de Marcos (1920×1080, escala 1,03): la ventana se maximiza y la
-  página más ancha necesita unos 1363 px.
+- **Por software:**
+  - 53 tests unitarios y la prueba de humo del recorrido completo pasan;
+  - revisé visualmente las capturas a 1920×1080;
+  - la app real arranca en el PC de Marcos con el piano cargado por WASAPI
+    (dispositivo 12, 48 kHz), la ventana se maximiza a 1920×1009 y el ancho
+    mínimo es de 1068 px.
+- **Con Marcos:** oye el piano en sus cascos con el micro de los cascos
+  abierto y le gusta cómo suena.
 
 ### Pendiente de probar con la voz de Marcos
 
-- Si la búsqueda de nota funciona con su micrófono real, ya que las
-  correcciones de captura anteriores siguen sin validar.
-- Si la bola sigue su voz sin saltos molestos y la latencia se nota justa.
-  Hay 0,25 s de margen de reacción y la marca de tiempo es la del callback,
-  sin compensar la latencia de entrada.
-- Si ±50 cents y los umbrales de juicio resultan justos y motivadores.
-- Si el tono de referencia suena bien con sus auriculares. Si hay auriculares
-  Bluetooth, la latencia de salida puede desalinear la escucha.
-- Si 5 notas con 4 s de descanso es un buen ritmo.
-- Si «Oírla antes de cada nota» (activado por defecto) ayuda o sobra.
+- Una ronda completa real: si detecta bien su nota de partida, si la bola
+  sigue su voz y si los juicios se sienten justos. Hay 0,25 s de reacción por
+  nota y las notas van ligadas.
+- Si el micro de unos cascos Bluetooth en modo manos libres (16 kHz) detecta
+  bien notas graves con YIN. Si falla, probar otro micro o suavizar lecturas
+  en el motor.
+- El ritmo de cada nivel (`note_len`), el rango inicial (−2/+5) y los
+  umbrales de crecimiento.
+- Si cantar diciendo el nombre de la nota (consonantes) provoca demasiadas
+  lecturas «no te oigo claro».
 
 ### Siguiente paso propuesto
 
-1. Sesión con la voz de Marcos. Anotar el diagnóstico de la búsqueda
-   (segundos, bloques con nota, señal máxima) y cómo se sienten los juicios.
-   Ajustar las constantes de `note_run.py` (TOLERANCE_CENTS, REACTION,
-   duraciones y descanso) según lo observado. Todas están arriba del archivo.
-2. Si hay saltos de octava de YIN con su voz, añadir suavizado de lecturas en
-   el motor, no en la vista.
-3. Sólo después: melodías de varias notas. `NoteRun` ya admite `durations`;
-   habría que generalizar el objetivo a una lista de (inicio, fin, cents
-   relativos) y dibujar cada barra a su altura. La pista ya tiene eje de
-   semitonos.
+1. Sesión real con Marcos en los niveles 1–2. Ajustar las constantes de
+   `levels.py`, `note_run.py` (REACTION, TURN_GAP, REST) y `progress.py`
+   según lo observado.
+2. Si hay saltos de octava o lecturas erráticas con el micro Bluetooth,
+   suavizar en el motor, nunca en la vista.
+3. Más adelante:
+   - sesión guiada (calentamiento, niveles y descanso);
+   - bajar de nivel si cuesta;
+   - melodías de canciones con la misma pista, que ya admite cualquier lista
+     de notas con nombre.
 
 ### Trabajo con Git (Claude Code y Codex)
 
@@ -106,8 +119,10 @@ de diseño anteriores que entren en conflicto con ella.
 - La identidad local del repo es `most78 <marcos.ostos@gmail.com>`. La global
   del PC es otra cuenta (NoMonoMad); no se toca.
 - La URL del remoto incluye el usuario (`https://most78@github.com/most78/Canto.git`).
-  Sin él, el gestor de credenciales usa la cuenta NoMonoMad y el push da un 403.
-- `canciones/`, `.venv/` y `.backup/` están en `.gitignore`.
+  Sin él, el gestor de credenciales usa NoMonoMad y el push da un 403.
+- `canciones/`, `.venv/`, `.backup/` y `datos/` están en `.gitignore`.
+  `assets/piano/` sí se sube, porque la licencia CC-BY lo permite con
+  atribución.
 - Uno implementa y el otro revisa sobre `git diff`. Haced commits pequeños y
   con mensaje en español.
 
