@@ -70,6 +70,7 @@ class Note:
     high: float = 0.0
     unclear: float = 0.0
     cents: list = field(default_factory=list)   # (segundos, cents) medidos
+    hit_spans: list = field(default_factory=list)  # tramos acertados, para dibujarlos
     judgement: str | None = None
 
     @property
@@ -223,6 +224,12 @@ class NoteRun:
                 if kind in ('hit', 'low', 'high'):
                     setattr(note, kind, getattr(note, kind) + overlap)
                     note.cents.append((overlap, cents))
+                if kind == 'hit':
+                    a, b = max(begin, note.start), min(end, note.end)
+                    if note.hit_spans and a - note.hit_spans[-1][1] < .05:
+                        note.hit_spans[-1] = (note.hit_spans[-1][0], b)
+                    else:
+                        note.hit_spans.append((a, b))
                 elif kind == 'unclear':
                     note.unclear += overlap
         self.live = reading

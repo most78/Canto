@@ -1,5 +1,14 @@
 # Canto: el claro del panda
 
+> **Sustituido (26/09/2026).** Marcos pidió cambiar este juego por «Pista de
+> voz»: una pista tipo Guitar Hero en la que las notas avanzan hacia una línea
+> AHORA, con eje vertical de altura. El panda queda sólo como detalle
+> decorativo. El estado actual está en `docs/context.md` y `README.md`.
+> Siguen vigentes los principios de puntuación de este documento: objetivo
+> fijo, sólo audio nuevo, silencio y ruido sin penalizar, sin premio por
+> volumen ni por aguantar, y 400 ms antes de dar una indicación. La mecánica
+> de «3 s acumulados» y la escena del claro ya no se usan.
+
 Propuesta actualizada (26/09/2026): leídos `README.md`, `docs/context.md` y los criterios ya disponibles en `docs/criterios-vocales.md`. Marcos prefiere pandas, su animal totémico: serán protagonistas, acompañados por luciérnagas. Los parámetros siguen siendo provisionales y requieren prueba con él. Esta propuesta describe el juego, no acredita técnica vocal ni comodidad a partir del micrófono.
 
 ## Primera experiencia

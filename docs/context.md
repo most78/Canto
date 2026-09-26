@@ -1,5 +1,120 @@
 # Canto — Contexto del proyecto
 
+## ESTADO ACTUAL (26/09/2026) · «Pista de voz» y rediseño general
+
+Lee esto primero. Las secciones de más abajo son historial y pueden describir
+decisiones ya sustituidas, como el panda protagonista, las luciérnagas o los
+3 s acumulados.
+
+### Qué pidió Marcos
+
+Replantear el ejercicio de buscar y repetir una nota como un juego tipo Guitar
+Hero controlado cantando, y rediseñar toda la app para pantalla grande:
+colorida, legible a distancia y con el área de juego como protagonista. Los
+pandas quedan como detalle decorativo. Esta petición sustituye las decisiones
+de diseño anteriores que entren en conflicto con ella.
+
+### Qué hay implementado
+
+- **Motor puro** en `src/game/` (sin Qt, con tests):
+  - `reference.py`: búsqueda de nota propia. Es la misma regla de antes,
+    extraída de `firefly.py`: grupo de lecturas a ±100 cents, 0,3 s y 3
+    bloques, límite de 4 s y diagnóstico del fallo.
+  - `note_run.py`: secuencia de 5 notas (1–2 s) con 4 s de descanso y 4,5 s
+    de entrada. Tiene reloj de juego con pausa, clasificación de cada bloque
+    (hit, low, high, unclear, silence, muted) y juicio por nota.
+  - Juicio por nota: ratio = acierto ÷ (duración − 0,25 s de reacción).
+    Con ≥0,75 es perfecta, ≥0,45 muy bien y ≥0,15 bien. Si no, es fallo con
+    dirección cuando hubo ≥25 % medido; «no te oí claro» cuando hubo ≥25 % de
+    ruido; y si no, «sin cantar».
+  - Los fallos rompen la racha; las notas sin medir no.
+  - Resumen final: estrellas, tiempo en zona, tendencia (mediana ponderada en
+    cents) y notas sin medir.
+  - Referencia opcional antes de cada nota. El motor silencia su ventana más
+    350 ms.
+- **Captura** (`src/audio/capture.py`): cada bloque lleva la marca
+  `time.monotonic()` del callback. `drain()` devuelve todos los bloques
+  pendientes (cola de 16). Antes `latest()` descartaba bloques; se mantiene
+  por compatibilidad.
+- **Interfaz**:
+  - `theme.py`: escala con `px()`, que depende de la altura de la pantalla.
+  - `track.py`: la pista con QPainter y una animación de 60 fps que no puntúa.
+  - `practice.py`: preparar (3 tarjetas), jugar y resultado.
+  - `songs.py`: el reproductor rediseñado.
+  - `main_window.py`: cabecera con navegación en pastillas, estado del micro y
+    botón de pantalla completa. Lee el micro cada 30 ms y reproduce el tono con
+    `sd.play`.
+  - `panda.py`: la mascota.
+  - `firefly.py` y `tuner_widget.py` ya no se usan; se conservan con sus tests.
+- La copia del estado anterior está en `.backup/2026-09-26-antes-pista/`
+  (fuera de Git) y en el primer commit del repositorio.
+
+### Cómo arrancar y probar
+
+```powershell
+.\iniciar.bat                                            # o: .\.venv\Scripts\python.exe src\main.py
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v   # 43 tests
+.\.venv\Scripts\python.exe tests\smoke_ui.py                  # recorrido completo + capturas docs/preview-*.png
+```
+
+### Verificado por software
+
+- 43 tests unitarios pasan. Cubren la regla de puntuación:
+  - el mismo resultado con bloques de 20 a 128 ms;
+  - descansos que no suman y aguantar más que no suma;
+  - volumen que no influye;
+  - silencio y ruido que no son fallo;
+  - una octava que es fallo;
+  - bloques repetidos o antiguos que no suman;
+  - pausa y referencia que no puntúan;
+  - la persistencia de 400 ms en las indicaciones;
+  - el objetivo fijo.
+- La prueba de humo de la interfaz pasa: recorrido completo con reloj simulado.
+- Revisé visualmente las capturas a 1920×1080 y abrí la app real en la
+  pantalla de Marcos (1920×1080, escala 1,03): la ventana se maximiza y la
+  página más ancha necesita unos 1363 px.
+
+### Pendiente de probar con la voz de Marcos
+
+- Si la búsqueda de nota funciona con su micrófono real, ya que las
+  correcciones de captura anteriores siguen sin validar.
+- Si la bola sigue su voz sin saltos molestos y la latencia se nota justa.
+  Hay 0,25 s de margen de reacción y la marca de tiempo es la del callback,
+  sin compensar la latencia de entrada.
+- Si ±50 cents y los umbrales de juicio resultan justos y motivadores.
+- Si el tono de referencia suena bien con sus auriculares. Si hay auriculares
+  Bluetooth, la latencia de salida puede desalinear la escucha.
+- Si 5 notas con 4 s de descanso es un buen ritmo.
+- Si «Oírla antes de cada nota» (activado por defecto) ayuda o sobra.
+
+### Siguiente paso propuesto
+
+1. Sesión con la voz de Marcos. Anotar el diagnóstico de la búsqueda
+   (segundos, bloques con nota, señal máxima) y cómo se sienten los juicios.
+   Ajustar las constantes de `note_run.py` (TOLERANCE_CENTS, REACTION,
+   duraciones y descanso) según lo observado. Todas están arriba del archivo.
+2. Si hay saltos de octava de YIN con su voz, añadir suavizado de lecturas en
+   el motor, no en la vista.
+3. Sólo después: melodías de varias notas. `NoteRun` ya admite `durations`;
+   habría que generalizar el objetivo a una lista de (inicio, fin, cents
+   relativos) y dibujar cada barra a su altura. La pista ya tiene eje de
+   semitonos.
+
+### Trabajo con Git (Claude Code y Codex)
+
+- Repositorio privado <https://github.com/most78/Canto>, rama `main`.
+- La identidad local del repo es `most78 <marcos.ostos@gmail.com>`. La global
+  del PC es otra cuenta (NoMonoMad); no se toca.
+- La URL del remoto incluye el usuario (`https://most78@github.com/most78/Canto.git`).
+  Sin él, el gestor de credenciales usa la cuenta NoMonoMad y el push da un 403.
+- `canciones/`, `.venv/` y `.backup/` están en `.gitignore`.
+- Uno implementa y el otro revisa sobre `git diff`. Haced commits pequeños y
+  con mensaje en español.
+
+---
+
+## Historial
+
 ## Corrección de captura bloqueada
 
 El usuario no obtenía referencia ni sosteniendo varias vocales. Se identificó una incompatibilidad potencial entre bloques fijos de 4096 muestras y los límites temporales del capturador de referencia. Ahora la captura ajusta bloques a unos 80 ms según frecuencia del dispositivo; puerta RMS de la app 0,002. Referencia por grupo de lecturas cercanas (±100 cents alrededor de candidato, 0,3 s acumulados, al menos 3 bloques), con confirmación del usuario. Intento limitado a 4 s mediante temporizador independiente: diagnóstico de falta de datos/señal baja/sin tono/inconsistencia. 24 tests pasan incluyendo 8–192 kHz y señal suave sintética. Causa exacta en micro real todavía sin confirmar.
