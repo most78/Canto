@@ -1,0 +1,3 @@
+numpy>=1.26        # paso 2: detección de pitch (ya necesario para los tests)
+sounddevice>=0.4   # paso 1: captura de micro (aún no instalado)
+PySide6>=6.6       # paso 4: interfaz (aún no instalado)

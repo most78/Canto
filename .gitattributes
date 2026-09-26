@@ -1,0 +1,2 @@
+# Normaliza finales de línea para que Claude Code y Codex no generen diffs de ruido
+* text=auto
