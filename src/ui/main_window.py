@@ -1,7 +1,6 @@
 """Ventana principal: cabecera con navegación y dos páginas (Pista de voz, Canciones)."""
 from pathlib import Path
 
-import numpy as np
 import sounddevice as sd
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QKeySequence, QShortcut
@@ -9,6 +8,7 @@ from PySide6.QtMultimedia import QMediaPlayer
 from PySide6.QtWidgets import QButtonGroup, QFrame, QHBoxLayout, QMainWindow, QStackedWidget, QVBoxLayout, QWidget
 
 from audio.capture import Microphone
+from audio.output import pick_output_device, play_tone
 from audio.pitch import detect_pitch, rms
 from ui import theme
 from ui.panda import PandaBadge
@@ -25,6 +25,8 @@ class MainWindow(QMainWindow):
         self.setWindowTitle('Canto')
         self.resize(px(1500), px(940))
         self.mic = Microphone()
+        # Con cascos Bluetooth la salida MME enmudece al abrir su micro: usamos WASAPI.
+        self.tone_device = pick_output_device()
         root = QWidget()
         root.setObjectName('root')
         self.setCentralWidget(root)
@@ -151,15 +153,15 @@ class MainWindow(QMainWindow):
     def play_tone(self, frequency, seconds):
         """Tono suave de referencia. El juego ya ha excluido este tiempo de la puntuación."""
         self.player.pause()
-        rate = 44100
-        t = np.arange(int(rate * seconds)) / rate
-        envelope = np.minimum(1, t / .03) * np.minimum(1, (seconds - t) / .12)
-        wave = np.sin(2 * np.pi * frequency * t) + .25 * np.sin(4 * np.pi * frequency * t)
-        tone = (.12 * wave * envelope).astype('float32')
         try:
-            sd.play(tone, rate)
-        except Exception as exc:
-            self.practice.mic_status.setText(f'No se pudo reproducir la nota: {exc}')
+            play_tone(frequency, seconds, self.tone_device)
+        except Exception:
+            try:
+                play_tone(frequency, seconds, None)     # respaldo: salida predeterminada
+            except Exception as exc:
+                text = f'No se pudo reproducir la nota: {exc}'
+                self.practice.mic_status.setText(text)
+                self.practice.show_message('toneerr', text, theme.ORANGE, force=True)
 
     def closeEvent(self, event):
         sd.stop()
