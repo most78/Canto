@@ -4,50 +4,66 @@ import { audioContext, resumeAudio } from './audio/context.js';
 import { Microphone } from './audio/mic.js';
 import { Piano } from './audio/piano.js';
 import { ScalesSession } from './exercises/scales.js';
+import { SingSession } from './exercises/singSong.js';
+import { SongPlayer } from './songs/playback.js';
 import { Progress, importLegacyProgress } from './state/progress.js';
+import { SongStats } from './state/songStats.js';
 import { $ } from './ui/dom.js';
 import { ScalesScreens } from './ui/scales.js';
-import { SongsScreen } from './ui/songs.js';
+import { ListenPlayer } from './ui/songs.js';
+import { SingScreens } from './ui/sing.js';
 
+const clock = () => audioContext().currentTime;
 const progress = Progress.load();
 const piano = new Piano();
-const session = new ScalesSession({ progress, piano, clock: () => audioContext().currentTime });
-const mic = new Microphone((stamp, duration, frequency, level) => session.feed(stamp, duration, frequency, level));
-const songs = new SongsScreen();
+const scales = new ScalesSession({ progress, piano, clock });
+const sing = new SingSession({
+  progress, stats: new SongStats(), player: new SongPlayer(piano), clock,
+  outputLatency: () => audioContext().outputLatency || audioContext().baseLatency || 0,
+});
+// El micrófono alimenta a los dos ejercicios; cada uno ignora lo que no le toca.
+const mic = new Microphone((stamp, duration, frequency, level) => {
+  scales.feed(stamp, duration, frequency, level);
+  sing.feed(stamp, duration, frequency, level);
+});
+const listen = new ListenPlayer();
 let section = 'scales';
 
 /** Tras un gesto del usuario el audio puede arrancar. */
 async function withAudio(fn) {
   await resumeAudio();
-  fn();
+  return fn();
+}
+
+function setMicState(on, message) {
+  scales.setMic(on, message);
+  sing.setMic(on);
+  const pill = $('mic-pill');
+  pill.querySelector('.dot').classList.toggle('on', on);
+  pill.lastElementChild.textContent = on ? 'Micro activo' : 'Micro apagado';
 }
 
 async function toggleMic() {
   if (mic.active) {
     mic.stop();
-    session.setMic(false, 'Micrófono desactivado.');
-  } else {
-    try {
-      const name = await mic.start($('devices').value);
-      await refreshDevices();
-      session.setMic(true, `Escuchando${name ? ` · ${name}` : ''}. Tu voz no se graba ni se envía.`);
-    } catch (error) {
-      const denied = error?.name === 'NotAllowedError';
-      session.setMic(false, denied
-        ? 'El navegador no tiene permiso para el micrófono. Pulsa el candado de la barra de direcciones y permítelo.'
-        : `No se pudo abrir el micrófono: ${error?.message ?? error}`);
-    }
+    setMicState(false, 'Micrófono desactivado.');
+    return;
   }
-  const pill = $('mic-pill');
-  pill.querySelector('.dot').classList.toggle('on', mic.active);
-  pill.lastElementChild.textContent = mic.active ? 'Micro activo' : 'Micro apagado';
+  try {
+    const name = await mic.start($('devices').value);
+    await refreshDevices();
+    setMicState(true, `Escuchando${name ? ` · ${name}` : ''}. Tu voz no se graba ni se envía.`);
+  } catch (error) {
+    const denied = error?.name === 'NotAllowedError';
+    setMicState(false, denied
+      ? 'El navegador no tiene permiso para el micrófono. Pulsa el candado de la barra de direcciones y permítelo.'
+      : `No se pudo abrir el micrófono: ${error?.message ?? error}`);
+  }
 }
 
 mic.onEnded = () => {
   mic.stop();
-  session.setMic(false, 'El micrófono se ha desconectado.');
-  $('mic-pill').querySelector('.dot').classList.remove('on');
-  $('mic-pill').lastElementChild.textContent = 'Micro apagado';
+  setMicState(false, 'El micrófono se ha desconectado.');
 };
 
 async function refreshDevices() {
@@ -64,31 +80,42 @@ async function refreshDevices() {
   } catch { /* sin acceso a dispositivos */ }
 }
 
-const screens = new ScalesScreens(session, { toggleMic, withAudio });
+const scalesScreens = new ScalesScreens(scales, { toggleMic, withAudio });
+const singScreens = new SingScreens(sing, listen, { toggleMic, withAudio });
 
 // ------------------------------------------------------------ navegación
 function show() {
-  const scales = section === 'scales';
-  $('screen-setup').hidden = !(scales && session.screen === 'setup');
-  $('screen-play').hidden = !(scales && session.screen === 'play');
-  $('screen-results').hidden = !(scales && session.screen === 'results');
-  $('screen-songs').hidden = scales;
+  const inScales = section === 'scales';
+  $('screen-setup').hidden = !(inScales && scales.screen === 'setup');
+  $('screen-play').hidden = !(inScales && scales.screen === 'play');
+  $('screen-results').hidden = !(inScales && scales.screen === 'results');
+  $('screen-songs').hidden = !(!inScales && sing.screen === 'pick');
+  $('screen-sing').hidden = !(!inScales && sing.screen === 'sing');
+  $('screen-song-results').hidden = !(!inScales && sing.screen === 'results');
   document.querySelectorAll('[data-nav]').forEach((b) => b.classList.toggle('active', b.dataset.nav === section));
-  const playing = scales && session.screen === 'play';
-  document.body.classList.toggle('focus', playing);   // al cantar, sólo la pista
-  if (playing) screens.startLoop(); else screens.stopLoop();
+  const playingScales = inScales && scales.screen === 'play';
+  const singing = !inScales && sing.screen === 'sing';
+  document.body.classList.toggle('focus', playingScales || singing);   // al cantar, sólo la pista
+  if (playingScales) scalesScreens.startLoop(); else scalesScreens.stopLoop();
+  if (singing) singScreens.startLoop(); else singScreens.stopLoop();
+}
+
+function updateVisibility() {
+  scales.setVisible(section === 'scales' && !document.hidden);
+  sing.setVisible(section === 'songs' && !document.hidden);
 }
 
 function go(target) {
   section = target;
-  if (target === 'scales') songs.pause();             // la canción nunca suena mientras se practica
-  session.setVisible(target === 'scales' && !document.hidden);
+  if (target === 'scales') listen.pause();            // nada suena mientras se practica
+  updateVisibility();
   show();
 }
 
 document.querySelectorAll('[data-nav]').forEach((b) => b.addEventListener('click', () => go(b.dataset.nav)));
-session.addEventListener('screen', show);
-document.addEventListener('visibilitychange', () => session.setVisible(section === 'scales' && !document.hidden));
+scales.addEventListener('screen', show);
+sing.addEventListener('screen', show);
+document.addEventListener('visibilitychange', updateVisibility);
 
 $('fullscreen').addEventListener('click', () => {
   if (document.fullscreenElement) document.exitFullscreen();
@@ -103,35 +130,38 @@ document.addEventListener('keydown', (event) => {
   const typing = ['INPUT', 'SELECT', 'TEXTAREA'].includes(event.target.tagName) && event.target.type !== 'range';
   if (event.code === 'Space' && !typing) {
     event.preventDefault();
-    if (section === 'songs') songs.toggle();
-    else withAudio(() => session.primaryAction());
+    if (section === 'scales') withAudio(() => scales.primaryAction());
+    else if (sing.screen === 'sing') withAudio(() => sing.togglePause());
+    else if (sing.screen === 'pick') listen.toggle();
   } else if (event.code === 'Escape') {
-    session.escapeAction();
+    if (section === 'scales') scales.escapeAction();
+    else if (sing.screen === 'sing' && sing.player.playing) sing.togglePause();
   }
 });
 // Los botones no se quedan con el foco: así la barra espaciadora no los repite.
 document.addEventListener('mouseup', (event) => {
-  if (event.target.closest('button')) event.target.closest('button').blur();
+  event.target.closest('button')?.blur();
 });
 
 // ------------------------------------------------------------ arranque
 (async () => {
   show();
+  updateVisibility();
   refreshDevices();
-  songs.load();
+  singScreens.load();
   if (await importLegacyProgress(progress)) {
-    session.levelIndex = progress.unlocked;
-    session.findText = 'Tu nota guardada (importada de la versión anterior). Puedes buscar otra cuando quieras.';
-    session.findProgress = 1;
-    session.emit('change');
+    scales.levelIndex = progress.unlocked;
+    scales.findText = 'Tu nota guardada (importada de la versión anterior). Puedes buscar otra cuando quieras.';
+    scales.findProgress = 1;
+    scales.emit('change');
   }
   try {
     await piano.load();
   } catch (error) {
-    session.micStatus = `Piano no disponible (${error.message}); se usará un tono simple.`;
-    session.emit('change');
+    scales.micStatus = `Piano no disponible (${error.message}); se usará un tono simple.`;
+    scales.emit('change');
   }
 })();
 
 // Para depurar desde la consola del navegador.
-window.canto = { session, mic, piano, progress };
+window.canto = { scales, sing, mic, piano, progress, session: scales };

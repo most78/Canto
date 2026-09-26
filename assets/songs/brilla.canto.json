@@ -1,0 +1,640 @@
+{
+ "format": "canto-song",
+ "version": 1,
+ "id": "brilla",
+ "metadata": {
+  "title": "Brilla",
+  "artist": "Canción de práctica de Canto",
+  "license": "Melodía tradicional (dominio público). Letra original de Canto.",
+  "notes": "Tono cómodo alrededor de Do2. Incluye un melisma («mor», Re→Do)."
+ },
+ "audio": {
+  "kind": "piano"
+ },
+ "lyrics": {
+  "lines": [
+   {
+    "id": "l1",
+    "words": [
+     {
+      "id": "l1w1",
+      "syllables": [
+       {
+        "id": "s1",
+        "text": "Can"
+       },
+       {
+        "id": "s2",
+        "text": "ta"
+       }
+      ]
+     },
+     {
+      "id": "l1w2",
+      "syllables": [
+       {
+        "id": "s3",
+        "text": "muy"
+       }
+      ]
+     },
+     {
+      "id": "l1w3",
+      "syllables": [
+       {
+        "id": "s4",
+        "text": "sua"
+       },
+       {
+        "id": "s5",
+        "text": "ve"
+       }
+      ]
+     },
+     {
+      "id": "l1w4",
+      "syllables": [
+       {
+        "id": "s6",
+        "text": "mi"
+       }
+      ]
+     },
+     {
+      "id": "l1w5",
+      "syllables": [
+       {
+        "id": "s7",
+        "text": "voz"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "l2",
+    "words": [
+     {
+      "id": "l2w1",
+      "syllables": [
+       {
+        "id": "s8",
+        "text": "sin"
+       }
+      ]
+     },
+     {
+      "id": "l2w2",
+      "syllables": [
+       {
+        "id": "s9",
+        "text": "pri"
+       },
+       {
+        "id": "s10",
+        "text": "sa,"
+       }
+      ]
+     },
+     {
+      "id": "l2w3",
+      "syllables": [
+       {
+        "id": "s11",
+        "text": "sin"
+       }
+      ]
+     },
+     {
+      "id": "l2w4",
+      "syllables": [
+       {
+        "id": "s12",
+        "text": "te"
+       },
+       {
+        "id": "s13",
+        "text": "mor"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "l3",
+    "words": [
+     {
+      "id": "l3w1",
+      "syllables": [
+       {
+        "id": "s14",
+        "text": "su"
+       },
+       {
+        "id": "s15",
+        "text": "be"
+       }
+      ]
+     },
+     {
+      "id": "l3w2",
+      "syllables": [
+       {
+        "id": "s16",
+        "text": "des"
+       },
+       {
+        "id": "s17",
+        "text": "pa"
+       },
+       {
+        "id": "s18",
+        "text": "cio"
+       }
+      ]
+     },
+     {
+      "id": "l3w3",
+      "syllables": [
+       {
+        "id": "s19",
+        "text": "y"
+       }
+      ]
+     },
+     {
+      "id": "l3w4",
+      "syllables": [
+       {
+        "id": "s20",
+        "text": "ven"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "l4",
+    "words": [
+     {
+      "id": "l4w1",
+      "syllables": [
+       {
+        "id": "s21",
+        "text": "ba"
+       },
+       {
+        "id": "s22",
+        "text": "ja"
+       }
+      ]
+     },
+     {
+      "id": "l4w2",
+      "syllables": [
+       {
+        "id": "s23",
+        "text": "lue"
+       },
+       {
+        "id": "s24",
+        "text": "go"
+       }
+      ]
+     },
+     {
+      "id": "l4w3",
+      "syllables": [
+       {
+        "id": "s25",
+        "text": "sin"
+       }
+      ]
+     },
+     {
+      "id": "l4w4",
+      "syllables": [
+       {
+        "id": "s26",
+        "text": "do"
+       },
+       {
+        "id": "s27",
+        "text": "lor"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "l5",
+    "words": [
+     {
+      "id": "l5w1",
+      "syllables": [
+       {
+        "id": "s28",
+        "text": "res"
+       },
+       {
+        "id": "s29",
+        "text": "pi"
+       },
+       {
+        "id": "s30",
+        "text": "ra"
+       }
+      ]
+     },
+     {
+      "id": "l5w2",
+      "syllables": [
+       {
+        "id": "s31",
+        "text": "y"
+       }
+      ]
+     },
+     {
+      "id": "l5w3",
+      "syllables": [
+       {
+        "id": "s32",
+        "text": "can"
+       },
+       {
+        "id": "s33",
+        "text": "ta"
+       }
+      ]
+     },
+     {
+      "id": "l5w4",
+      "syllables": [
+       {
+        "id": "s34",
+        "text": "más"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "l6",
+    "words": [
+     {
+      "id": "l6w1",
+      "syllables": [
+       {
+        "id": "s35",
+        "text": "can"
+       },
+       {
+        "id": "s36",
+        "text": "ta"
+       }
+      ]
+     },
+     {
+      "id": "l6w2",
+      "syllables": [
+       {
+        "id": "s37",
+        "text": "con"
+       }
+      ]
+     },
+     {
+      "id": "l6w3",
+      "syllables": [
+       {
+        "id": "s38",
+        "text": "el"
+       }
+      ]
+     },
+     {
+      "id": "l6w4",
+      "syllables": [
+       {
+        "id": "s39",
+        "text": "co"
+       },
+       {
+        "id": "s40",
+        "text": "ra"
+       },
+       {
+        "id": "s41",
+        "text": "zón"
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "voices": [
+  {
+   "id": "voz",
+   "name": "Voz",
+   "priority": 1,
+   "events": [
+    {
+     "id": "e1",
+     "start": 3,
+     "duration": 0.52,
+     "pitch": 48,
+     "syllable": "s1"
+    },
+    {
+     "id": "e2",
+     "start": 3.6,
+     "duration": 0.52,
+     "pitch": 48,
+     "syllable": "s2"
+    },
+    {
+     "id": "e3",
+     "start": 4.2,
+     "duration": 0.52,
+     "pitch": 55,
+     "syllable": "s3"
+    },
+    {
+     "id": "e4",
+     "start": 4.8,
+     "duration": 0.52,
+     "pitch": 55,
+     "syllable": "s4"
+    },
+    {
+     "id": "e5",
+     "start": 5.4,
+     "duration": 0.52,
+     "pitch": 57,
+     "syllable": "s5"
+    },
+    {
+     "id": "e6",
+     "start": 6,
+     "duration": 0.52,
+     "pitch": 57,
+     "syllable": "s6"
+    },
+    {
+     "id": "e7",
+     "start": 6.6,
+     "duration": 1.12,
+     "pitch": 55,
+     "syllable": "s7"
+    },
+    {
+     "id": "e8",
+     "start": 8.4,
+     "duration": 0.52,
+     "pitch": 53,
+     "syllable": "s8"
+    },
+    {
+     "id": "e9",
+     "start": 9,
+     "duration": 0.52,
+     "pitch": 53,
+     "syllable": "s9"
+    },
+    {
+     "id": "e10",
+     "start": 9.6,
+     "duration": 0.52,
+     "pitch": 52,
+     "syllable": "s10"
+    },
+    {
+     "id": "e11",
+     "start": 10.2,
+     "duration": 0.52,
+     "pitch": 52,
+     "syllable": "s11"
+    },
+    {
+     "id": "e12",
+     "start": 10.8,
+     "duration": 0.52,
+     "pitch": 50,
+     "syllable": "s12"
+    },
+    {
+     "id": "e13",
+     "start": 11.4,
+     "duration": 0.58,
+     "pitch": 50,
+     "syllable": "s13"
+    },
+    {
+     "id": "e14",
+     "start": 12,
+     "duration": 1.18,
+     "pitch": 48,
+     "syllable": "s13"
+    },
+    {
+     "id": "e15",
+     "start": 13.8,
+     "duration": 0.52,
+     "pitch": 55,
+     "syllable": "s14"
+    },
+    {
+     "id": "e16",
+     "start": 14.4,
+     "duration": 0.52,
+     "pitch": 55,
+     "syllable": "s15"
+    },
+    {
+     "id": "e17",
+     "start": 15,
+     "duration": 0.52,
+     "pitch": 53,
+     "syllable": "s16"
+    },
+    {
+     "id": "e18",
+     "start": 15.6,
+     "duration": 0.52,
+     "pitch": 53,
+     "syllable": "s17"
+    },
+    {
+     "id": "e19",
+     "start": 16.2,
+     "duration": 0.52,
+     "pitch": 52,
+     "syllable": "s18"
+    },
+    {
+     "id": "e20",
+     "start": 16.8,
+     "duration": 0.52,
+     "pitch": 52,
+     "syllable": "s19"
+    },
+    {
+     "id": "e21",
+     "start": 17.4,
+     "duration": 1.12,
+     "pitch": 50,
+     "syllable": "s20"
+    },
+    {
+     "id": "e22",
+     "start": 19.2,
+     "duration": 0.52,
+     "pitch": 55,
+     "syllable": "s21"
+    },
+    {
+     "id": "e23",
+     "start": 19.8,
+     "duration": 0.52,
+     "pitch": 55,
+     "syllable": "s22"
+    },
+    {
+     "id": "e24",
+     "start": 20.4,
+     "duration": 0.52,
+     "pitch": 53,
+     "syllable": "s23"
+    },
+    {
+     "id": "e25",
+     "start": 21,
+     "duration": 0.52,
+     "pitch": 53,
+     "syllable": "s24"
+    },
+    {
+     "id": "e26",
+     "start": 21.6,
+     "duration": 0.52,
+     "pitch": 52,
+     "syllable": "s25"
+    },
+    {
+     "id": "e27",
+     "start": 22.2,
+     "duration": 0.52,
+     "pitch": 52,
+     "syllable": "s26"
+    },
+    {
+     "id": "e28",
+     "start": 22.8,
+     "duration": 1.12,
+     "pitch": 50,
+     "syllable": "s27"
+    },
+    {
+     "id": "e29",
+     "start": 24.6,
+     "duration": 0.52,
+     "pitch": 48,
+     "syllable": "s28"
+    },
+    {
+     "id": "e30",
+     "start": 25.2,
+     "duration": 0.52,
+     "pitch": 48,
+     "syllable": "s29"
+    },
+    {
+     "id": "e31",
+     "start": 25.8,
+     "duration": 0.52,
+     "pitch": 55,
+     "syllable": "s30"
+    },
+    {
+     "id": "e32",
+     "start": 26.4,
+     "duration": 0.52,
+     "pitch": 55,
+     "syllable": "s31"
+    },
+    {
+     "id": "e33",
+     "start": 27,
+     "duration": 0.52,
+     "pitch": 57,
+     "syllable": "s32"
+    },
+    {
+     "id": "e34",
+     "start": 27.6,
+     "duration": 0.52,
+     "pitch": 57,
+     "syllable": "s33"
+    },
+    {
+     "id": "e35",
+     "start": 28.2,
+     "duration": 1.12,
+     "pitch": 55,
+     "syllable": "s34"
+    },
+    {
+     "id": "e36",
+     "start": 30,
+     "duration": 0.52,
+     "pitch": 53,
+     "syllable": "s35"
+    },
+    {
+     "id": "e37",
+     "start": 30.6,
+     "duration": 0.52,
+     "pitch": 53,
+     "syllable": "s36"
+    },
+    {
+     "id": "e38",
+     "start": 31.2,
+     "duration": 0.52,
+     "pitch": 52,
+     "syllable": "s37"
+    },
+    {
+     "id": "e39",
+     "start": 31.8,
+     "duration": 0.52,
+     "pitch": 52,
+     "syllable": "s38"
+    },
+    {
+     "id": "e40",
+     "start": 32.4,
+     "duration": 0.52,
+     "pitch": 50,
+     "syllable": "s39"
+    },
+    {
+     "id": "e41",
+     "start": 33,
+     "duration": 0.52,
+     "pitch": 50,
+     "syllable": "s40"
+    },
+    {
+     "id": "e42",
+     "start": 33.6,
+     "duration": 1.12,
+     "pitch": 48,
+     "syllable": "s41"
+    }
+   ]
+  }
+ ]
+}

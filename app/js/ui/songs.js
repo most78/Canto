@@ -1,23 +1,20 @@
-// Pantalla «Canciones»: biblioteca local, reproducción, búsqueda, volumen y A–B.
+// Reproductor de escucha de la sección Canciones: reproducir, buscar, volumen y A–B.
+// La canción la elige la lista del catálogo (ui/sing.js).
 
 import { $ } from './dom.js';
 import { ABLoop, clock } from '../songs/abLoop.js';
-import { listSongs } from '../songs/library.js';
 
 const PLAY = '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
 const PAUSE = '<svg viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
 
-export class SongsScreen {
+export class ListenPlayer {
   constructor() {
     this.audio = $('song-audio');
     this.loop = new ABLoop();
-    this.objectUrls = [];
     const audio = this.audio;
     audio.volume = Number($('song-volume').value);
     $('song-play').innerHTML = PLAY;
 
-    $('song-list').addEventListener('change', () => this.select());
-    $('song-file').addEventListener('change', (e) => this.openFile(e.target.files[0]));
     $('song-play').addEventListener('click', () => this.toggle());
     $('song-seek').addEventListener('input', (e) => { audio.currentTime = Number(e.target.value); });
     $('song-volume').addEventListener('input', (e) => { audio.volume = Number(e.target.value); });
@@ -29,45 +26,25 @@ export class SongsScreen {
     audio.addEventListener('timeupdate', () => this.onTime());
     audio.addEventListener('play', () => { $('song-play').innerHTML = PAUSE; });
     audio.addEventListener('pause', () => { $('song-play').innerHTML = PLAY; });
-    audio.addEventListener('error', () => { $('song-status').textContent = 'No se pudo reproducir el audio.'; });
+    audio.addEventListener('error', () => { if (audio.src) $('song-status').textContent = 'No se pudo reproducir el audio.'; });
   }
 
-  async load() {
-    const songs = await listSongs();
-    const list = $('song-list');
-    list.innerHTML = '';
-    for (const song of songs) list.add(new Option(song.name, song.url));
-    if (!songs.length) list.add(new Option('No hay audios en la carpeta «canciones»', ''));
-    this.select();
-  }
-
-  select() {
-    const list = $('song-list');
+  /** Cambia de audio (null = esta canción no tiene archivo que escuchar). */
+  setSource(url) {
     this.audio.pause();
     this.loop.reset();
     $('loop').checked = false;
     $('loop').disabled = true;
     $('segment').textContent = 'Elige un inicio y un final para practicar por partes.';
     $('song-status').textContent = '';
-    const option = list.selectedOptions[0];
-    $('song-title').textContent = option?.value ? option.text : 'Añade audio a la carpeta «canciones»';
-    if (option?.value) this.audio.src = option.value;
-  }
-
-  openFile(file) {
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    this.objectUrls.push(url);
-    const list = $('song-list');
-    [...list.options].filter((o) => !o.value).forEach((o) => o.remove());
-    list.add(new Option(file.name.replace(/\.[^.]+$/, ''), url));
-    list.selectedIndex = list.options.length - 1;
-    this.select();
+    $('listen-player').hidden = !url;
+    if (url) this.audio.src = url;
+    else this.audio.removeAttribute('src');
   }
 
   toggle() {
     const audio = this.audio;
-    if (!audio.src) return;
+    if (!audio.getAttribute('src')) return;
     if (!audio.paused) { audio.pause(); return; }
     const jump = this.loop.startPosition(audio.currentTime);
     if (jump !== null) audio.currentTime = jump;

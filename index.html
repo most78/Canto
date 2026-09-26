@@ -126,37 +126,112 @@
       </div>
     </section>
 
-    <!-- ========== Canciones ========== -->
+    <!-- ========== Canciones · elegir ========== -->
     <section class="screen songs page" id="screen-songs" hidden>
       <div class="intro">
         <div class="eyebrow">Canciones</div>
-        <h1>Escucha y practica por fragmentos</h1>
-        <p class="lead">Tu biblioteca local. La adaptación de tonalidad y la puntuación de canciones llegarán después.</p>
+        <h1>Canta siguiendo la letra</h1>
+        <p class="lead">La letra es la pista: su altura te dice por dónde va la melodía y tu voz es la línea.</p>
       </div>
-      <div class="library">
-        <select id="song-list"></select>
-        <label class="btn" for="song-file">Abrir audio…</label>
-        <input type="file" id="song-file" accept="audio/*,.m4a,.mp3,.wav,.flac,.ogg" hidden>
-      </div>
-      <div class="player">
-        <h2 id="song-title">Añade audio a la carpeta «canciones»</h2>
-        <div class="transport">
-          <button class="btn round" id="song-play" aria-label="Reproducir"></button>
-          <div class="bar">
-            <input type="range" id="song-seek" min="0" max="0" step="0.01" value="0">
-            <span class="secondary" id="song-time">0:00 / 0:00</span>
+      <div class="songs-layout">
+        <div class="song-catalog" id="song-catalog"></div>
+        <div class="song-detail">
+          <div class="eyebrow" id="song-source"></div>
+          <h2 id="song-title">Elige una canción</h2>
+          <p class="secondary" id="song-subtitle"></p>
+
+          <div id="sing-panel" hidden>
+            <div class="choice" id="part-choice" hidden>
+              <span class="small">Parte</span><div class="segmented" id="parts"></div>
+            </div>
+            <div class="choice">
+              <span class="small">Dificultad</span><div class="segmented" id="levels-song"></div>
+            </div>
+            <div class="choice">
+              <span class="small">Octava</span>
+              <div class="segmented" id="octaves">
+                <button class="seg" data-transpose="-12">Una abajo</button>
+                <button class="seg" data-transpose="0">Original</button>
+                <button class="seg" data-transpose="12">Una arriba</button>
+              </div>
+            </div>
+            <p class="secondary" id="song-suggestion"></p>
+            <p class="secondary" id="song-range"></p>
+            <div class="sing-actions">
+              <button class="btn primary" id="sing-start">Cantar</button>
+              <button class="btn" id="sing-mic">Activar micrófono</button>
+              <span class="small latency">Latencia
+                <button class="btn mini" id="lat-minus" aria-label="Menos latencia">−</button>
+                <span id="lat-value">0 ms</span>
+                <button class="btn mini" id="lat-plus" aria-label="Más latencia">+</button>
+              </span>
+            </div>
+          </div>
+
+          <div id="missing-panel" hidden>
+            <p>Para cantarla faltan datos que el audio no trae:</p>
+            <ul class="missing" id="missing-list"></ul>
+            <p class="secondary">Se leerán de <code id="missing-file"></code> cuando existan. Mientras, puedes escucharla y practicar por fragmentos.</p>
+          </div>
+          <p class="secondary" id="song-error"></p>
+
+          <div class="player" id="listen-player" hidden>
+            <div class="divider-h"></div>
+            <div class="eyebrow">Escuchar y practicar por fragmentos</div>
+            <div class="transport">
+              <button class="btn round" id="song-play" aria-label="Reproducir"></button>
+              <div class="bar">
+                <input type="range" id="song-seek" min="0" max="0" step="0.01" value="0">
+                <span class="secondary" id="song-time">0:00 / 0:00</span>
+              </div>
+            </div>
+            <div class="loop">
+              <button class="btn" id="mark-a">Marcar inicio A</button>
+              <button class="btn" id="mark-b">Marcar final B</button>
+              <label class="check"><input type="checkbox" id="loop" disabled> Repetir A–B</label>
+              <div class="volume"><span class="small">Volumen</span><input type="range" id="song-volume" min="0" max="1" step="0.01" value="0.5"></div>
+            </div>
+            <p class="secondary" id="segment">Elige un inicio y un final para practicar por partes.</p>
+            <p class="small" id="song-status"></p>
+          </div>
+          <div class="open-file">
+            <label class="btn" for="song-file">Abrir otro audio…</label>
+            <input type="file" id="song-file" accept="audio/*,.m4a,.mp3,.wav,.flac,.ogg" hidden>
           </div>
         </div>
-        <div class="loop">
-          <button class="btn" id="mark-a">Marcar inicio A</button>
-          <button class="btn" id="mark-b">Marcar final B</button>
-          <label class="check"><input type="checkbox" id="loop" disabled> Repetir A–B</label>
-          <div class="volume"><span class="small">Volumen</span><input type="range" id="song-volume" min="0" max="1" step="0.01" value="0.5"></div>
-        </div>
-        <p class="secondary" id="segment">Elige un inicio y un final para practicar por partes.</p>
-        <p class="small" id="song-status"></p>
       </div>
       <audio id="song-audio" preload="metadata"></audio>
+    </section>
+
+    <!-- ========== Canciones · cantar (sólo letra y voz) ========== -->
+    <section class="screen sing" id="screen-sing" hidden>
+      <canvas id="lyrics"></canvas>
+      <div class="sing-controls">
+        <button class="btn" id="sing-pause">Pausa</button>
+        <span class="small">Espacio: pausa · Esc: pausa</span>
+        <button class="btn" id="sing-stop">Terminar</button>
+      </div>
+    </section>
+
+    <!-- ========== Canciones · resultado ========== -->
+    <section class="screen page" id="screen-song-results" hidden>
+      <div class="song-results">
+        <div class="eyebrow" id="sr-level"></div>
+        <h1 id="sr-title"></h1>
+        <div class="sr-numbers">
+          <div><div class="big tone-reward" id="sr-hits"></div><div class="secondary">sílabas acertadas</div></div>
+          <div><div class="big" id="sr-pitch"></div><div class="secondary">del tiempo afinado</div></div>
+          <div><div class="big" id="sr-combo"></div><div class="secondary">mejor racha</div></div>
+          <div><div class="big tone-reward" id="sr-score"></div><div class="secondary">puntos</div></div>
+        </div>
+        <p id="sr-timing"></p>
+        <p id="sr-hardest"></p>
+        <p class="tone-special" id="sr-extra"></p>
+        <div class="actions">
+          <button class="btn primary" id="sr-again">Otra vez</button>
+          <button class="btn" id="sr-back">Elegir canción</button>
+        </div>
+      </div>
     </section>
   </main>
 </div>

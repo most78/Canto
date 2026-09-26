@@ -54,7 +54,7 @@ Diferencias con Python, todas intencionadas:
 ### Cómo arrancar y probar
 
 ```powershell
-.\start-canto.bat          # o: python -m http.server 8765  →  http://localhost:8765/
+.\start-canto.bat          # o: python serve.py  →  http://localhost:8765/
 npm test                  # 39 tests JS (node --test, sin dependencias)
 .\.venv\Scripts\python.exe tests\web\make_fixtures.py            # regenera los resultados de referencia del Python
 .\.venv\Scripts\python.exe -m unittest discover -s legacy/tests   # 53 tests del legacy
@@ -92,11 +92,80 @@ npm test                  # 39 tests JS (node --test, sin dependencias)
   dejó el volumen del elemento a 0 en el navegador integrado; ya está
   corregido.
 
+### Modo Canción V1: «la letra es la pista»
+
+Petición de Marcos: cantar canciones siguiendo la letra. La letra comunica qué
+cantar, cuándo, la altura relativa (posición vertical), la duración (ancho) y
+el movimiento de la melodía (trayectoria). Sin nombres de nota, cents ni
+pentagrama.
+
+Qué se ve:
+
+- La voz es una **línea continua** (no un punto): verde afinada, cyan por
+  debajo, naranja por encima. El color tiene **histéresis**, así que no
+  parpadea.
+- No hay mensajes correctivos: la posición de la línea ya los dice.
+- **Acierto consolidado:** el fondo verde se rellena mientras cantas bien y se
+  completa al acertar la sílaba, con un destello breve.
+- Los errores no se castigan.
+
+Implementado:
+
+- `app/js/songs/model.js`: formato `*.canto.json` (ver
+  `docs/formato-cancion.md`). Letra en frases, palabras y sílabas; `voices[]`
+  con notas que apuntan a sílabas; melismas (varias notas por sílaba);
+  `expression` reservado.
+- `parts.js`: una voz, «Voz A/B», o «Cántala entera» (en los solapes manda la
+  prioridad explícita). Agrupa las notas en unidades por sílaba y aplica la
+  transposición **explícita**.
+- `difficulty.js`: Inicial, Intermedio, Avanzado y Reto. Todos los parámetros
+  en un solo sitio: tolerancia, histéresis, permanencia, fracción requerida,
+  estabilidad, márgenes de timing y anticipación. `suggestNext` sólo sugiere
+  subir, nunca cambia solo.
+- `feedback.js`: pitch visual (mediana de 3 y exponencial de τ = 50 ms) y
+  estado con histéresis y permanencia. Separado de la puntuación.
+- `songRun.js`: puntuación por sílaba con el pitch en bruto, fracción afinada
+  y tramo continuo mínimo. Resumen: % de sílabas, afinación, timing (mediana),
+  mejor racha y **la frase que más costó, con su texto**.
+- `tessitura.js`: avisa de fragmentos fuera del rango cómodo; nunca cambia
+  notas.
+- `playback.js`: la canción suena en el reloj de audio (archivo decodificado o
+  piano).
+- `exercises/singSong.js`: compensación de latencia (salida + entrada estimada
+  + media ventana + ajuste manual ± ms guardado).
+- `catalog.js`: canciones incluidas y locales, con la lista de datos que faltan.
+- `ui/lyricsTrack.js` y `ui/sing.js`: la interfaz.
+- `serve.py`: `http.server` sin caché, que ahora usa `start-canto.bat`. El
+  navegador se quedaba con módulos antiguos.
+- **Canción de práctica** `assets/songs/brilla.canto.json`: melodía tradicional
+  de dominio público, letra original de Canto, audio tocado por el piano, con
+  un melisma.
+
+Verificado:
+
+- 60 tests JS en verde (21 nuevos del modo canción).
+- En el navegador integrado, con voz simulada inyectada por el mismo camino
+  que el micrófono:
+  - sílabas acertadas en verde y línea cyan por debajo en la frase grave;
+  - melisma dibujado;
+  - resultado con «Este fragmento fue el que más te costó: «…»»;
+  - la canción de Rayden muestra qué datos faltan.
+
+**Falta para cantar la canción real de Rayden:** su `.canto.json` con letra,
+tiempos por sílaba y melodía de cada voz. Opciones en
+`docs/formato-cancion.md`: manual asistido, o automático con Demucs + Whisper
++ extracción de pitch (dependencias pesadas: pedir permiso).
+
 ### Siguiente paso
 
-1. Sesión real con Marcos. Ajustar constantes en `app/js/game/noteRun.js`,
-   `levels.js` y `mic.js` (ventana y salto) según lo observado.
-2. Cuando la web esté validada con su voz, **proponer borrar `legacy/`**
+1. Sesión real con Marcos:
+   - Escalas: ajustar las constantes de `app/js/game/noteRun.js`, `levels.js`
+     y `mic.js`.
+   - Canción: probar «Brilla» y ajustar `app/js/songs/difficulty.js` y la
+     latencia.
+2. Decidir con Marcos cómo crear los datos de su canción (opción A, B o C de
+   `docs/formato-cancion.md`).
+3. Cuando la web esté validada con su voz, **proponer borrar `legacy/`**
    (seguirá en el historial de Git). La rama `pyside-restyle-wip` guarda un
    rediseño de PySide6 interrumpido; también se puede borrar.
 

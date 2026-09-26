@@ -74,12 +74,43 @@
 .vm-anchor { font-size: var(--fs-small); color: var(--violet); height: 1.2em; }
 .vm-range { font-size: var(--fs-small); color: var(--muted); }
 
-/* ---------- canciones ---------- */
+/* ---------- canciones: elegir (calma) ---------- */
 .songs .intro { display: grid; gap: var(--space-2); margin-bottom: var(--space-7); }
-.songs .library { display: flex; gap: var(--space-3); max-width: 70rem; }
-.songs .library select { flex: 1; }
-.player { max-width: 70rem; margin-top: var(--space-7); display: grid; gap: var(--space-5); }
+.songs-layout { display: grid; grid-template-columns: minmax(16rem, 1fr) 3fr; gap: var(--space-8); align-items: start; }
+.song-catalog { display: grid; gap: 0.15rem; }
+.song-catalog .option { flex-direction: column; gap: 0.1rem; }
+.song-catalog .option .sub { font-size: var(--fs-small); color: var(--dim); font-weight: 400; }
+.song-detail { display: grid; gap: var(--space-4); max-width: 64rem; }
+.choice { display: flex; align-items: center; gap: var(--space-4); }
+.choice > .small { min-width: 6.5rem; }
+.segmented { display: inline-flex; border: var(--border); border-radius: var(--radius-button); overflow: hidden; }
+.seg { font: inherit; font-size: var(--fs-secondary); color: var(--muted); background: transparent; border: none;
+  padding: 0.5em 1em; cursor: pointer; border-left: var(--border); }
+.seg:first-child { border-left: none; }
+.seg:hover { color: var(--text); }
+.seg.selected { color: var(--ink); background: var(--text); font-weight: 600; }
+.sing-actions { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-2); }
+.latency { margin-left: auto; display: inline-flex; align-items: center; gap: var(--space-2); }
+.btn.mini { padding: 0.15em 0.6em; font-size: var(--fs-secondary); }
+.missing { margin: 0; padding-left: 1.2em; color: var(--muted); display: grid; gap: var(--space-1); }
+code { font-size: var(--fs-small); color: var(--text); background: var(--surface); padding: 0.1em 0.4em; border-radius: 0.3em; }
+.player { display: grid; gap: var(--space-4); margin-top: var(--space-5); }
 .transport { display: flex; align-items: center; gap: var(--space-5); }
 .transport .bar { flex: 1; display: grid; gap: var(--space-1); }
 .loop { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
 .loop .volume { margin-left: auto; display: flex; align-items: center; gap: var(--space-3); width: 16rem; }
+.open-file { margin-top: var(--space-3); }
+
+/* ---------- canciones: cantar (foco total en la letra) ---------- */
+.sing { height: 100vh; position: relative; }
+/* Posición absoluta: el lienzo ocupa siempre toda la pantalla, sin depender del flex. */
+.sing canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.sing-controls { position: absolute; left: 0; right: 0; bottom: var(--space-4); display: flex; justify-content: space-between;
+  align-items: center; padding: 0 var(--space-6); opacity: 0.18; transition: opacity var(--calm) var(--ease); }
+.sing-controls:hover, .sing-controls:focus-within { opacity: 1; }
+
+/* ---------- canciones: resultado (vuelve la calma) ---------- */
+.song-results { display: grid; gap: var(--space-5); max-width: 70rem; }
+.sr-numbers { display: flex; gap: var(--space-8); flex-wrap: wrap; margin: var(--space-4) 0; }
+.sr-numbers .big { font-size: var(--fs-result); font-weight: var(--fw-strong); line-height: 1.1; }
+.quote { color: var(--text); font-weight: 600; }
