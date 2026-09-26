@@ -6,8 +6,8 @@ set PY=python
 if exist ".venv\Scripts\python.exe" set PY=".venv\Scripts\python.exe"
 rem Abre el navegador un segundo despues, cuando el servidor ya escucha.
 start "" /min cmd /c "timeout /t 1 /nobreak >nul & start http://localhost:%PORT%/"
-echo Canto en http://localhost:%PORT%/   (cierra esta ventana para apagarlo)
-%PY% -m http.server %PORT% --bind 127.0.0.1
+rem serve.py = http.server sin cache (siempre la ultima version del codigo)
+%PY% serve.py %PORT%
 if errorlevel 1 (
   echo.
   echo No se pudo arrancar el servidor. Comprueba que Python esta instalado.
