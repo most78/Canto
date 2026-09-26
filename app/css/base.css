@@ -1,0 +1,56 @@
+/* Base: escala para pantalla grande, tipografía y estructura de la app. */
+
+/* 1rem = 16px en 1080 p; crece en pantallas más altas (televisor, 4K). */
+html { font-size: clamp(13px, calc(100vh / 67.5), 30px); }
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: var(--fs-body);
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, p { margin: 0; }
+h1 { font-size: var(--fs-h1); font-weight: var(--fw-h1); letter-spacing: -0.01em; }
+h2 { font-size: var(--fs-h2); font-weight: var(--fw-h2); }
+.lead { color: var(--muted); }
+.secondary { font-size: var(--fs-secondary); color: var(--muted); }
+.small { font-size: var(--fs-small); color: var(--muted); }
+.eyebrow {
+  font-size: var(--fs-eyebrow);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+[hidden] { display: none !important; }
+
+/* --- estructura --- */
+.app { min-height: 100vh; display: flex; flex-direction: column; }
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-3) var(--space-8);
+  border-bottom: var(--border);
+}
+.brand { font-size: 1.5rem; font-weight: 600; letter-spacing: -0.02em; margin-right: var(--space-4); }
+.brand span { color: var(--pink); }
+.topbar nav { display: flex; gap: var(--space-2); }
+.topbar .spacer { flex: 1; }
+
+main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.screen { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.page { padding: var(--space-7) var(--space-8) var(--space-6); max-width: 120rem; width: 100%; }
+
+/* Al cantar sólo queda la pista: la navegación se oculta. */
+body.focus .topbar { display: none; }
+
+.divider-v { width: 1px; background: var(--line); align-self: stretch; }
+.divider-h { height: 1px; background: var(--line); }

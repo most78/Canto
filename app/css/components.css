@@ -1,0 +1,93 @@
+/* Componentes compartidos: botones, entradas, pasos, indicadores. */
+
+.btn {
+  font: inherit;
+  font-size: var(--fs-secondary);
+  font-weight: 600;
+  color: var(--text);
+  background: transparent;
+  border: var(--border);
+  border-radius: var(--radius-button);
+  padding: 0.65em 1.3em;
+  cursor: pointer;
+  transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease), color var(--fast);
+}
+.btn:hover:not(:disabled) { background: var(--card); border-color: var(--line-strong); }
+.btn:active:not(:disabled) { background: var(--line); }
+.btn:disabled { color: var(--dim); border-color: var(--surface); cursor: default; }
+.btn:focus-visible, .option:focus-visible, select:focus-visible { outline: 2px solid var(--violet); outline-offset: 2px; }
+
+/* CTA: claro y neutro. El color queda para el feedback. */
+.btn.primary { background: var(--text); color: var(--ink); border-color: var(--text); font-size: var(--fs-body); padding: 0.7em 1.6em; }
+.btn.primary:hover:not(:disabled) { background: #fff; border-color: #fff; }
+.btn.primary:disabled { background: var(--card); border-color: var(--card); color: var(--dim); }
+
+.btn.nav { border-color: transparent; color: var(--muted); padding: 0.45em 1em; }
+.btn.nav:hover { background: transparent; color: var(--text); border-color: transparent; }
+.btn.nav.active { color: var(--text); background: var(--card); }
+
+.btn.round {
+  width: 4.5rem; height: 4.5rem; padding: 0; border-radius: 50%;
+  background: var(--text); color: var(--ink); border: none;
+  display: inline-grid; place-items: center;
+}
+.btn.round:hover { background: #fff; }
+.btn.round svg { width: 1.6rem; height: 1.6rem; fill: currentColor; }
+
+select, input[type=file] { font: inherit; }
+select {
+  font-size: var(--fs-secondary);
+  color: var(--text);
+  background: var(--surface);
+  border: var(--border);
+  border-radius: var(--radius-input);
+  padding: 0.55em 0.8em;
+  width: 100%;
+}
+select:disabled { color: var(--dim); }
+
+input[type=range] { width: 100%; accent-color: var(--text); height: 1.5rem; cursor: pointer; }
+input[type=checkbox] { width: 1.2rem; height: 1.2rem; accent-color: var(--text); vertical-align: middle; }
+label.check { display: inline-flex; align-items: center; gap: var(--space-2); font-size: var(--fs-secondary); cursor: pointer; }
+
+/* Pill: sólo para estados cortos (micro activo/apagado). */
+.pill {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  font-size: var(--fs-small); color: var(--muted);
+  border: var(--border); border-radius: var(--radius-pill); padding: 0.25em 0.85em;
+}
+.dot { width: 0.55rem; height: 0.55rem; border-radius: 50%; background: var(--dim); }
+.dot.on { background: var(--green); box-shadow: 0 0 0.6rem var(--green); }
+
+/* Paso numerado: discreto; sólo el activo se ilumina. */
+.step-head { display: flex; align-items: center; gap: var(--space-3); }
+.step-num {
+  width: 1.9rem; height: 1.9rem; border-radius: 50%;
+  display: grid; place-items: center;
+  font-size: var(--fs-small); font-weight: 600;
+  color: var(--dim); border: var(--border);
+  transition: all var(--calm) var(--ease);
+}
+.step-title { font-size: var(--fs-h2); font-weight: 600; color: var(--muted); transition: color var(--calm); }
+.step.active .step-num { background: var(--text); border-color: var(--text); color: var(--ink); }
+.step.active .step-title { color: var(--text); }
+
+/* Barra fina de progreso: el violeta indica «buscando la nota». */
+.meter { height: 0.375rem; border-radius: 0.2rem; background: var(--line); overflow: hidden; }
+.meter > div { height: 100%; width: 0; background: var(--violet); transition: width var(--fast) linear; }
+
+/* Opción de lista (niveles): sin cajas, un filo a la izquierda al elegirla. */
+.option {
+  font: inherit; font-size: var(--fs-secondary); text-align: left;
+  color: var(--muted); background: transparent;
+  border: none; border-left: 3px solid transparent;
+  padding: 0.5em 0.9em; cursor: pointer;
+  display: flex; gap: var(--space-3);
+}
+.option .num { color: var(--dim); min-width: 1.2em; }
+.option:hover:not(:disabled) { color: var(--text); background: var(--surface); }
+.option.selected { color: var(--text); font-weight: 600; border-left-color: var(--text); background: var(--surface); }
+.option:disabled { color: #4a4b4c; cursor: default; }
+.option:disabled .num { color: #3b3c3d; }
+
+.icon-dot { display: inline-block; }

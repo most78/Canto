@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Canto</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' fill='%23ff5fa2'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="app/css/tokens.css">
+  <link rel="stylesheet" href="app/css/base.css">
+  <link rel="stylesheet" href="app/css/components.css">
+  <link rel="stylesheet" href="app/css/screens.css">
+  <script type="module" src="app/js/main.js"></script>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">canto<span>.</span></div>
+    <nav>
+      <button class="btn nav active" data-nav="scales">Escalas</button>
+      <button class="btn nav" data-nav="songs">Canciones</button>
+    </nav>
+    <div class="spacer"></div>
+    <span class="pill" id="mic-pill"><span class="dot"></span><span>Micro apagado</span></span>
+    <button class="btn nav" id="fullscreen">Pantalla completa</button>
+  </header>
+
+  <main>
+    <!-- ========== Escalas · preparar ========== -->
+    <section class="screen setup page" id="screen-setup">
+      <div class="intro">
+        <div class="eyebrow">Escalas</div>
+        <h1>Escucha al piano y repite</h1>
+        <p class="lead">Canta cada nota diciendo su nombre (la, si, do…) o con una vocal. Así aprendes qué nota es cada una.</p>
+      </div>
+
+      <div class="steps">
+        <div class="step" data-step="0">
+          <div class="step-head"><span class="step-num">1</span><span class="step-title">Micrófono</span></div>
+          <select id="devices"><option value="">Micrófono predeterminado</option></select>
+          <button class="btn primary" id="mic-toggle">Activar micrófono</button>
+          <p class="secondary" id="mic-status">Tu voz no se graba ni se envía.</p>
+          <div class="grow"></div>
+          <p class="secondary">Voz cómoda, como al hablar: no hace falta cantar fuerte. Si algo molesta o cansa, para; descansar también cuenta.</p>
+        </div>
+
+        <div class="step" data-step="1">
+          <div class="step-head"><span class="step-num">2</span><span class="step-title">Tu nota de partida</span></div>
+          <p class="lead" id="find-text"></p>
+          <div>
+            <div class="note-big idle" id="note-big">—</div>
+            <div class="secondary" id="note-hz">&nbsp;</div>
+          </div>
+          <div class="meter"><div id="find-meter"></div></div>
+          <p class="small" id="hearing">&nbsp;</p>
+          <div class="grow"></div>
+          <div class="row">
+            <button class="btn primary" id="find">Encontrar mi nota</button>
+            <button class="btn" id="listen">Escuchar</button>
+          </div>
+        </div>
+
+        <div class="step" data-step="2">
+          <div class="step-head"><span class="step-num">3</span><span class="step-title">Nivel</span></div>
+          <div class="levels" id="levels"></div>
+          <p id="level-text"></p>
+          <p class="preview" id="preview"></p>
+          <p class="secondary" id="range-needed"></p>
+          <div class="grow"></div>
+          <p class="secondary" id="range-text"></p>
+          <button class="btn primary" id="start">Empezar</button>
+        </div>
+      </div>
+
+      <div class="legend">
+        <span><i class="swatch target"></i>Barras <b>violeta</b>: tu turno, canta esa nota al cruzar AHORA</span>
+        <span><i class="swatch listen"></i>Barras tenues: escucha al piano, no puntúan</span>
+        <span><i class="swatch voice"></i>Tu voz: <b class="tone-hit">verde</b> afinada, <b class="tone-low">cyan</b> sube, <b class="tone-high">naranja</b> baja</span>
+      </div>
+    </section>
+
+    <!-- ========== Escalas · jugar ========== -->
+    <section class="screen play" id="screen-play" hidden>
+      <canvas id="track"></canvas>
+      <div class="banner tone-quiet" id="banner">&nbsp;</div>
+      <div class="controls">
+        <button class="btn" id="pause">Pausa</button>
+        <button class="btn" id="play-listen" disabled>Escuchar mi nota</button>
+        <span class="spacer small">Espacio: pausa / seguir · Esc: pausa</span>
+        <button class="btn" id="quit">Terminar</button>
+      </div>
+    </section>
+
+    <!-- ========== Escalas · resultado ========== -->
+    <section class="screen page" id="screen-results" hidden>
+      <div class="results">
+        <div class="summary">
+          <div class="stars" id="stars"></div>
+          <div class="result-title" id="result-title"></div>
+          <div class="score" id="result-score"></div>
+        </div>
+        <div class="divider-v"></div>
+        <div class="detail">
+          <div class="eyebrow" id="result-level"></div>
+          <h2 id="result-headline"></h2>
+          <div class="attempts" id="attempts"></div>
+          <p class="secondary">
+            <b class="tone-hit">Verde</b> acertada · <b class="tone-low">cyan</b> grave ·
+            <b class="tone-high">naranja</b> aguda · <b class="tone-dim">gris</b> sin medir (no cuenta como fallo).
+          </p>
+          <p class="secondary" id="result-lines"></p>
+          <div class="eyebrow" style="margin-top: var(--space-5)">Mapa de tu voz · % de acierto por nota</div>
+          <div class="voicemap" id="voicemap"></div>
+          <div class="vm-range">Nombres en claro: tu rango de trabajo · <span class="tone-target">▲</span> tu nota · recuadro: notas de esta ronda</div>
+          <div class="comfort" style="margin-top: var(--space-5)">
+            <span>¿Te resultó cómodo?</span>
+            <button class="btn" id="comfort-yes">Sí</button>
+            <button class="btn" id="comfort-no">Me costó</button>
+          </div>
+          <p class="secondary" id="comfort-note"></p>
+          <div class="actions">
+            <button class="btn primary" id="again">Otra vez</button>
+            <button class="btn" id="next-level">Siguiente nivel</button>
+            <button class="btn" id="change-level">Cambiar nivel</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== Canciones ========== -->
+    <section class="screen songs page" id="screen-songs" hidden>
+      <div class="intro">
+        <div class="eyebrow">Canciones</div>
+        <h1>Escucha y practica por fragmentos</h1>
+        <p class="lead">Tu biblioteca local. La adaptación de tonalidad y la puntuación de canciones llegarán después.</p>
+      </div>
+      <div class="library">
+        <select id="song-list"></select>
+        <label class="btn" for="song-file">Abrir audio…</label>
+        <input type="file" id="song-file" accept="audio/*,.m4a,.mp3,.wav,.flac,.ogg" hidden>
+      </div>
+      <div class="player">
+        <h2 id="song-title">Añade audio a la carpeta «canciones»</h2>
+        <div class="transport">
+          <button class="btn round" id="song-play" aria-label="Reproducir"></button>
+          <div class="bar">
+            <input type="range" id="song-seek" min="0" max="0" step="0.01" value="0">
+            <span class="secondary" id="song-time">0:00 / 0:00</span>
+          </div>
+        </div>
+        <div class="loop">
+          <button class="btn" id="mark-a">Marcar inicio A</button>
+          <button class="btn" id="mark-b">Marcar final B</button>
+          <label class="check"><input type="checkbox" id="loop" disabled> Repetir A–B</label>
+          <div class="volume"><span class="small">Volumen</span><input type="range" id="song-volume" min="0" max="1" step="0.01" value="0.5"></div>
+        </div>
+        <p class="secondary" id="segment">Elige un inicio y un final para practicar por partes.</p>
+        <p class="small" id="song-status"></p>
+      </div>
+      <audio id="song-audio" preload="metadata"></audio>
+    </section>
+  </main>
+</div>
+</body>
+</html>

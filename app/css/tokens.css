@@ -1,0 +1,73 @@
+/* Sistema visual de Canto — un único sitio para cambiar el diseño.
+ *
+ * Principio: Canto está tranquilo cuando tú estás tranquilo y cobra vida
+ * cuando cantas. La estructura es carbón neutro y cálido; los colores intensos
+ * son información y aparecen en pequeñas dosis.
+ */
+:root {
+  /* --- estructura (calma) --- */
+  --bg: #111315;
+  --surface: #181b1e;
+  --card: #202428;
+  --line: #30353a;
+  --line-strong: #454b51;
+  --text: #f4f2ee;
+  --muted: #a8a6a1;
+  --dim: #6d6c68;
+  --ink: #111315;              /* texto sobre fondos claros */
+
+  /* --- acentos con significado --- */
+  --violet: #9b7bff;           /* nota objetivo / elemento musical activo */
+  --green: #3ee08f;            /* afinación correcta / éxito */
+  --cyan: #3fd0ff;             /* estás grave: sube */
+  --orange: #ff9a3d;           /* estás agudo: baja */
+  --gold: #ffcc4d;             /* puntuación, estrellas, rachas, recompensas */
+  --pink: #ff5fa2;             /* identidad de Canto / momentos especiales */
+
+  /* --- tipografía (a 1080 p, 1rem = 16px; ver base.css) --- */
+  --font: 'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --fs-h1: 2.25rem;     --fw-h1: 600;   /* 36px */
+  --fs-h2: 1.625rem;    --fw-h2: 600;   /* 26px */
+  --fs-body: 1.2rem;                    /* 19px */
+  --fs-secondary: 1.0625rem;            /* 17px */
+  --fs-small: 0.9375rem;                /* 15px */
+  --fs-eyebrow: 0.8125rem;              /* 13px */
+  --fs-note: 4rem;      --fw-strong: 700;
+  --fs-banner: 2rem;
+  --fs-result: 2.75rem;
+  --fs-score: 1.75rem;
+
+  /* --- espacio --- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 2.5rem;
+  --space-8: 4rem;
+
+  /* --- forma --- */
+  --radius-card: 1rem;       /* 16px */
+  --radius-button: 0.6875rem; /* 11px */
+  --radius-input: 0.625rem;   /* 10px */
+  --radius-pill: 999px;
+  --border: 1px solid var(--line);
+
+  /* --- movimiento --- */
+  --ease: cubic-bezier(.2, .7, .2, 1);
+  --fast: 120ms;
+  --calm: 280ms;
+}
+
+/* Estados de feedback: el color es el mensaje. */
+.tone-neutral { color: var(--text); }
+.tone-quiet   { color: var(--muted); }
+.tone-target  { color: var(--violet); }
+.tone-hit     { color: var(--green); }
+.tone-low     { color: var(--cyan); }
+.tone-high    { color: var(--orange); }
+.tone-reward  { color: var(--gold); }
+.tone-special { color: var(--pink); }
+.tone-warn    { color: var(--text); }
+.tone-dim     { color: var(--dim); }

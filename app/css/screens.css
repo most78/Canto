@@ -1,0 +1,85 @@
+/* Pantallas: preparar, jugar, resultado y canciones. */
+
+/* ---------- preparar (calma) ---------- */
+.setup .intro { display: grid; gap: var(--space-2); margin-bottom: var(--space-7); }
+.steps { display: grid; grid-template-columns: 4fr 4fr 5fr; gap: 0; flex: 1; }
+.step { display: flex; flex-direction: column; gap: var(--space-4); padding: 0 var(--space-6); min-height: 24rem; }
+.step:first-child { padding-left: 0; }
+.step + .step { border-left: var(--border); }
+.step .grow { flex: 1; }
+.step .row { display: flex; gap: var(--space-3); }
+.step .row .btn.primary { flex: 2; }
+.step .row .btn:not(.primary) { flex: 1; }
+
+.note-big { font-size: var(--fs-note); font-weight: var(--fw-strong); line-height: 1; color: var(--violet); letter-spacing: -0.02em; }
+.note-big.idle { color: var(--dim); font-weight: 400; }
+
+.levels { display: grid; grid-template-columns: 1fr 1fr; gap: 0.15rem var(--space-3); }
+.preview { color: var(--violet); font-weight: 600; }
+
+.legend { margin-top: var(--space-6); padding-top: var(--space-4); border-top: var(--border);
+  display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-7); font-size: var(--fs-secondary); color: var(--muted); }
+.legend b { font-weight: 600; }
+.swatch { display: inline-block; width: 1.4rem; height: 0.55rem; border-radius: 0.2rem; margin-right: 0.5rem; vertical-align: middle; }
+.swatch.target { background: var(--violet); }
+.swatch.listen { border: 1px solid var(--muted); }
+.swatch.voice { width: 0.7rem; height: 0.7rem; border-radius: 50%; background: var(--text); }
+
+/* ---------- jugar (vida) ---------- */
+.play { padding: var(--space-4) var(--space-6) var(--space-4); gap: var(--space-3); height: 100vh; }
+.play canvas { flex: 1; width: 100%; min-height: 0; display: block; border-radius: var(--radius-card); }
+.banner {
+  min-height: 3.2rem; text-align: center;
+  font-size: var(--fs-banner); font-weight: var(--fw-strong);
+  transition: color var(--fast);
+}
+.play .controls { display: flex; align-items: center; gap: var(--space-3); }
+.play .controls .spacer { flex: 1; text-align: center; }
+
+/* ---------- resultado (vuelve la calma; el dorado recompensa) ---------- */
+.results { display: grid; grid-template-columns: 2fr auto 4fr; gap: var(--space-8); align-items: stretch; }
+.results .summary { display: flex; flex-direction: column; justify-content: center; gap: var(--space-2); }
+.stars { font-size: 4.5rem; line-height: 1; letter-spacing: 0.1em; }
+.stars .on { color: var(--gold); text-shadow: 0 0 1.2rem color-mix(in srgb, var(--gold) 45%, transparent); }
+.stars .off { color: var(--line); }
+.result-title { font-size: var(--fs-result); font-weight: var(--fw-strong); line-height: 1.1; }
+.score { font-size: var(--fs-score); font-weight: 600; color: var(--gold); }
+.results .detail { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4) 0; }
+.attempts { display: grid; gap: var(--space-2); font-size: var(--fs-body); }
+.attempt { display: flex; gap: var(--space-4); align-items: baseline; flex-wrap: wrap; }
+.attempt .label { color: var(--muted); min-width: 5.5em; }
+.attempt .pct { min-width: 3.5em; font-weight: 600; }
+.attempt .notes { display: flex; gap: var(--space-3); flex-wrap: wrap; }
+.attempt .notes span { font-weight: 600; }
+.j-hit { color: var(--green); }
+.j-miss_low { color: var(--cyan); }
+.j-miss_high { color: var(--orange); }
+.j-unclear, .j-silent { color: var(--dim); }
+.comfort { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.actions { display: flex; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-2); }
+
+/* Mapa de tu voz: más verde = más acierto. */
+.voicemap { display: flex; gap: 0.25rem; align-items: flex-start; flex-wrap: wrap; margin-top: var(--space-2); }
+.vm-cell { width: 3.4rem; display: grid; gap: 0.2rem; justify-items: center; }
+.vm-box {
+  width: 100%; height: 2.9rem; border-radius: 0.4rem; background: var(--surface);
+  display: grid; place-items: center; font-size: var(--fs-small); font-weight: 600; position: relative; overflow: hidden;
+}
+.vm-cell.inside .vm-box { background: var(--card); }
+.vm-fill { position: absolute; inset: 0; background: var(--green); }
+.vm-box span { position: relative; }
+.vm-cell.played .vm-box { outline: 2px solid color-mix(in srgb, var(--text) 75%, transparent); outline-offset: -2px; }
+.vm-name { font-size: var(--fs-small); color: var(--dim); }
+.vm-cell.inside .vm-name { color: var(--text); font-weight: 600; }
+.vm-anchor { font-size: var(--fs-small); color: var(--violet); height: 1.2em; }
+.vm-range { font-size: var(--fs-small); color: var(--muted); }
+
+/* ---------- canciones ---------- */
+.songs .intro { display: grid; gap: var(--space-2); margin-bottom: var(--space-7); }
+.songs .library { display: flex; gap: var(--space-3); max-width: 70rem; }
+.songs .library select { flex: 1; }
+.player { max-width: 70rem; margin-top: var(--space-7); display: grid; gap: var(--space-5); }
+.transport { display: flex; align-items: center; gap: var(--space-5); }
+.transport .bar { flex: 1; display: grid; gap: var(--space-1); }
+.loop { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.loop .volume { margin-left: auto; display: flex; align-items: center; gap: var(--space-3); width: 16rem; }
